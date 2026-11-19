@@ -9,7 +9,7 @@ export default class Miner extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.enemies.add(this); // adiciona ao grupo ANTES de configurar o corpo (o grupo aplica defaults)
     this.setOrigin(0.5, 1).setDepth(DEPTH.enemies).setFlipX(true);
-    this.body.setSize(26, 52).setOffset(19, 12);
+    this.body.setSize(26, 52).setOffset((this.width - 26) / 2, this.height - 52); // vale p/ placeholder 64px e sheet real 128px
     this.hp = 30;
     this.isTarget = true;
     this.state = 'walk';

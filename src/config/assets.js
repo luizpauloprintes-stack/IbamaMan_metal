@@ -1,10 +1,11 @@
-// Sprites reais (PNG com fundo transparente) em public/assets/sprites/.
-// Ao adicionar uma entrada aqui, o BootScene carrega o PNG e NÃO gera o placeholder da mesma key.
-// Mantenha os mesmos frames/tamanhos dos placeholders (ver CLAUDE.md) para não quebrar animações/corpos.
-//
-// Exemplo:
-// { key: 'player_run', file: 'player_run.png', frameWidth: 64, frameHeight: 64 },
-export const SPRITE_MANIFEST = [];
+// Sprites reais (recortados das 8 folhas de arte por tools/build_sheets.py) em public/assets/sprites/.
+// O BootScene carrega cada entrada do manifest e NÃO gera o placeholder da mesma key.
+// Para voltar aos placeholders procedurais de uma key, remova-a do manifest.json.
+import manifest from '../../public/assets/sprites/manifest.json';
+
+export const SPRITE_MANIFEST = manifest;
+// bg_sky "full" = cenário completo pintado (dispensa as camadas bg_forest/bg_river procedurais)
+export const FULL_BACKGROUND = manifest.some((s) => s.key === 'bg_sky' && s.full);
 
 // Todas as keys usadas pelo jogo (placeholders gerados em src/gfx/placeholders.js)
 export const KEYS = {

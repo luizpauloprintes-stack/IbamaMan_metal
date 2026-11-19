@@ -1,0 +1,119 @@
+[
+ {
+  "key": "player_run",
+  "file": "player_run.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "player_shoot",
+  "file": "player_shoot.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "player_pose",
+  "file": "player_pose.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "player_bomb_win",
+  "file": "player_bomb_win.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "enemy_miner_hose",
+  "file": "enemy_miner_hose.png",
+  "frameWidth": 128,
+  "frameHeight": 64
+ },
+ {
+  "key": "enemy_logger",
+  "file": "enemy_logger.png",
+  "frameWidth": 128,
+  "frameHeight": 64
+ },
+ {
+  "key": "ally_gef_heli",
+  "file": "ally_gef_heli.png",
+  "frameWidth": 192,
+  "frameHeight": 128
+ },
+ {
+  "key": "slug_boat",
+  "file": "slug_boat.png",
+  "frameWidth": 128,
+  "frameHeight": 80
+ },
+ {
+  "key": "slug_quad",
+  "file": "slug_quad.png",
+  "frameWidth": 128,
+  "frameHeight": 80
+ },
+ {
+  "key": "boss_mega_draga",
+  "file": "boss_mega_draga.png",
+  "frameWidth": 440,
+  "frameHeight": 194
+ },
+ {
+  "key": "wildlife_cages",
+  "file": "wildlife_cages.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "powerups_hrf",
+  "file": "powerups_hrf.png",
+  "frameWidth": 32,
+  "frameHeight": 32
+ },
+ {
+  "key": "fx_explosion",
+  "file": "fx_explosion.png",
+  "frameWidth": 64,
+  "frameHeight": 64
+ },
+ {
+  "key": "fx_muzzle",
+  "file": "fx_muzzle.png",
+  "frameWidth": 16,
+  "frameHeight": 16
+ },
+ {
+  "key": "proj_bomb",
+  "file": "proj_bomb.png",
+  "frameWidth": 14,
+  "frameHeight": 14
+ },
+ {
+  "key": "hazard_hg_bucket",
+  "file": "hazard_hg_bucket.png",
+  "frameWidth": 24,
+  "frameHeight": 24
+ },
+ {
+  "key": "ground_mud",
+  "file": "ground_mud.png"
+ },
+ {
+  "key": "water",
+  "file": "water.png"
+ },
+ {
+  "key": "plat_wood",
+  "file": "plat_wood.png"
+ },
+ {
+  "key": "plat_raft",
+  "file": "plat_raft.png"
+ },
+ {
+  "key": "bg_sky",
+  "file": "bg_sky.jpg",
+  "full": true
+ }
+]

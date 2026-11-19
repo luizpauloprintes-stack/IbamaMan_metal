@@ -14,7 +14,8 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setOrigin(0.5, 1).setDepth(DEPTH.enemies - 1);
     this.body.setAllowGravity(false).setImmovable(true);
-    this.body.setSize(280, 150).setOffset(20, 64);
+    // corpo proporcional ao quadro (placeholder 320x220 ou sheet real 340x150)
+    this.body.setSize(this.width * 0.8, this.height * 0.68).setOffset(this.width * 0.15, this.height * 0.32);
 
     this.maxHP = 1000;
     this.hp = this.maxHP;
@@ -27,7 +28,7 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     this.smokeTimer = null;
   }
 
-  get hoseMouth() { return { x: this.x - 150, y: this.y - 100 }; }
+  get hoseMouth() { return { x: this.x - this.width * 0.44, y: this.y - this.height * 0.55 }; }
 
   enter(onReady) {
     const targetX = this.x;
@@ -80,8 +81,8 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
 
   rollBucket() {
     const speed = this.phase === 1 ? 150 : 230;
-    this.scene.spawnBucket(this.x - 150, GROUND_Y - 40, -speed);
-    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - 150, GROUND_Y - 40, -speed * 0.75));
+    this.scene.spawnBucket(this.x - this.width * 0.42, GROUND_Y - 40, -speed);
+    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - this.width * 0.42, GROUND_Y - 40, -speed * 0.75));
   }
 
   takeDamage(dmg) {

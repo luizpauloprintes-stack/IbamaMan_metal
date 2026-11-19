@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH } from '../config/constants.js';
 import { WEAPONS } from '../config/weapons.js';
 import { DEMO_MISSION } from '../config/missions.js';
+import { FULL_BACKGROUND } from '../config/assets.js';
 import Player from '../objects/Player.js';
 import Miner from '../objects/Miner.js';
 import Cage from '../objects/Cage.js';
@@ -68,6 +69,12 @@ export default class GameScene extends Phaser.Scene {
   // ---------------------------------------------------------------- cenário
   buildBackground() {
     this.bgSky = this.add.tileSprite(0, 0, GAME_W, GAME_H, 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
+    if (FULL_BACKGROUND) {
+      const t = this.textures.get('bg_sky').getSourceImage();
+      this.bgSky.setTileScale(GAME_H / t.height);
+      this.bgForest = null; this.bgRiver = null;
+      return;
+    }
     this.bgForest = this.add.tileSprite(0, 150, GAME_W, 180, 'bg_forest').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 1);
     this.bgRiver = this.add.tileSprite(0, 320, GAME_W, 90, 'bg_river').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 2);
   }
@@ -195,6 +202,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.player.x < minX && !this.player.dead) { this.player.x = minX; if (this.player.body.velocity.x < 0) this.player.setVelocityX(0); }
 
     const sx = cam.scrollX;
+    if (FULL_BACKGROUND) { this.bgSky.tilePositionX = sx * 0.3; return; }
     this.bgSky.tilePositionX = sx * 0.05;
     this.bgForest.tilePositionX = sx * 0.25;
     this.bgRiver.tilePositionX = sx * 0.5;
@@ -300,6 +308,7 @@ export default class GameScene extends Phaser.Scene {
     this.showBanner('ALERTA! MEGA DRAGA', 2200, '#ff4d4d', 'Garimpo ilegal no rio — destrua a draga!');
 
     this.boss = new MegaDraga(this, BOSS_LOCK_X + 640, GROUND_Y + 14);
+    this.boss.x = BOSS_LOCK_X + GAME_W - this.boss.width / 2 + 10;
     this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP };
     this.physics.add.overlap(this.playerShots, this.boss, (a, b) => this.onShotHit(a, b));
     this.physics.add.overlap(this.bombs, this.boss, (a, b) => this.detonate(a.isShot ? a : b));

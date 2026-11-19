@@ -40,6 +40,9 @@ src/objects/
   Cage.js                  gaiola com animal: quebra com tiro → solta o animal e dropa bônus
   MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg)
 android/                   projeto nativo gerado pelo Capacitor (versionado)
+public/assets/sprites/     spritesheets gerados + manifest.json
+tools/build_sheets.py      recorta as folhas de arte em spritesheets
+tools/source_sheets/       as 8 folhas de arte originais
 ```
 
 ### Fluxo entre cenas
@@ -82,27 +85,35 @@ android/                   projeto nativo gerado pelo Capacitor (versionado)
 
 Com `ammo <= 0` a arma volta para `PISTOL`.
 
-## Sprites: placeholders → PNG reais
+## Sprites (arte real + placeholders)
 
-Referência: *Curadoria de Sprites IbamaMan: Garimpo Slug* (8 folhas). Recortar com fundo transparente, pivô na base dos pés (`origin(0.5, 1)`), salvar em `public/assets/sprites/` e registrar em `SPRITE_MANIFEST` (`src/config/assets.js`). Uma key carregada do manifest **não** é gerada como placeholder.
+A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria).
+`tools/build_sheets.py` remove o fundo branco, recorta cada quadro, alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
 
-| Key | Frames × tamanho | Origem (folha) |
-|---|---|---|
-| `player_run` | 5 × 64×64 | Sheet 02 linha 1 |
-| `player_shoot` | 5 × 64×64 | Sheet 02 linha 2 |
-| `player_bomb_win` | 10 × 64×64 (0–4 arremesso, 5–9 vitória) | Sheet 03 |
-| `player_pose` | 4 × 64×64 (parado, agachado, pulo, dano) | Sheet 02/03 |
-| `enemy_miner_hose` | 4 × 64×64 (parado, jato, jato, fuga) | Sheet 04 linha 1 |
-| `enemy_logger` | 4 × 64×64 | Sheet 04 linha 2 |
-| `ally_gef_heli` | 1 × 192×128 | Sheet 04/05 |
-| `slug_boat` / `slug_quad` | 2 × 128×80 | Sheet 05 topo |
-| `boss_mega_draga` | 2 × 320×220 (HP>50%, HP≤50%) | Sheet 05/08 |
-| `wildlife_cages` | 8 × 64×64 (preso/solto: arara, onça, macaco, peixe-boi) | Sheet 06 esquerda |
-| `powerups_hrf` | 6 × 32×32 (H, R, F, medkit, açaí, abacaxi) | Sheet 06 direita |
-| `fx_explosion` | 10 × 64×64 | Sheet 06 inferior direita |
-| `proj_*`, `hazard_hg_bucket`, `plat_wood`, `plat_raft`, `ground_mud`, `water`, `bg_*` | ver `KEYS` | Sheets 06–08 |
+```bash
+pip install opencv-python-headless scipy numpy
+python3 tools/build_sheets.py      # depois: npm run build
+```
 
-Se um PNG real tiver outro tamanho de quadro, ajuste os `body.setSize/setOffset` no objeto correspondente.
+O `BootScene` carrega tudo que está no `manifest.json`; **qualquer key ausente do manifest cai no placeholder procedural** de `src/gfx/placeholders.js` (hoje: projéteis `proj_bullet/hmg/rocket/flame/mud` e as camadas `bg_forest/bg_river`). `bg_sky` com `"full": true` é o cenário pintado completo da Missão 3 (espelhado para rolar sem emenda) e desliga as camadas procedurais.
+
+| Key | Sheet real (quadros × px) | Placeholder | Origem |
+|---|---|---|---|
+| `player_run` / `player_shoot` | 5 × 64×64 | 5 × 64×64 | Sheet 02 linha 1 (tiro em corrida + clarão procedural `fx_muzzle`) |
+| `player_pose` | 4 × 64×64 (parado, agachado, pulo, dano) | idem | Sheets 02/03 |
+| `player_bomb_win` | 10 × 64×64 (0–4 arremesso, 5–9 vitória) | idem | Sheet 03 |
+| `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | Sheet 04 linha 1 |
+| `enemy_logger` | 4 × **128×64** | 4 × 64×64 | Sheet 04 linha 2 |
+| `ally_gef_heli` | 1 × 192×128 | idem | Sheet 05 centro |
+| `slug_boat` / `slug_quad` | 2 × 128×80 | idem | Sheet 05 topo (ainda não usados) |
+| `boss_mega_draga` | 2 × **440×194** (normal, avariada) | 2 × 320×220 | Sheet 05 inferior |
+| `wildlife_cages` | 8 × 64×64 (preso/solto: arara, onça, macaco, peixe-boi) | idem | Sheet 06 esquerda |
+| `powerups_hrf` | 6 × 32×32 (H, R, F, medkit, açaí, abacaxi) | idem | Sheet 06 direita |
+| `fx_explosion` | 10 × 64×64 | idem | Sheet 06 inferior direita |
+| `fx_muzzle`, `proj_bomb`, `hazard_hg_bucket` | 16, 14, 24 px | idem | Sheets 03/06 |
+| `ground_mud`, `water`, `plat_wood`, `plat_raft`, `bg_sky` | texturas | idem | Sheet 07 |
+
+Corpos físicos que dependem do tamanho do quadro são calculados a partir de `this.width/this.height` (Miner, MegaDraga), então trocar placeholder ↔ arte real não exige mudar código. Se mudar o tamanho de quadro do jogador (64×64), ajuste `standBody/crouchBody` em `Player.js`.
 
 ## Regras de código
 - JavaScript ES modules, sem TypeScript; uma classe por arquivo em `src/objects/` e `src/scenes/`.
