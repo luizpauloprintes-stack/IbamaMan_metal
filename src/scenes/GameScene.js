@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH } from '../config/constants.js';
+import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN } from '../config/constants.js';
 import { WEAPONS } from '../config/weapons.js';
 import { DEMO_MISSION } from '../config/missions.js';
 import { FULL_BACKGROUND } from '../config/assets.js';
@@ -56,7 +56,7 @@ export default class GameScene extends Phaser.Scene {
     this.buildTerrain();
     this.createGroups();
 
-    this.player = new Player(this, 120, GROUND_Y - 10);
+    this.player = new Player(this, 160, GROUND_Y - 10);
     this.player.setCollideWorldBounds(true);
 
     this.populateLevel();
@@ -194,11 +194,11 @@ export default class GameScene extends Phaser.Scene {
   updateCamera() {
     const cam = this.cameras.main;
     if (!this.bossTriggered) {
-      const target = Phaser.Math.Clamp(this.player.x - 300, 0, BOSS_LOCK_X);
+      const target = Phaser.Math.Clamp(this.player.x - CAMERA_LEAD_X, 0, BOSS_LOCK_X);
       if (target > cam.scrollX) cam.scrollX = Math.min(cam.scrollX + Math.max(2, (target - cam.scrollX) * 0.2), target);
     }
     // estilo arcade: não dá para voltar além da borda esquerda da tela
-    const minX = cam.scrollX + 16;
+    const minX = cam.scrollX + (cam.scrollX > 0 ? SCREEN_LEFT_MARGIN : 16);
     if (this.player.x < minX && !this.player.dead) { this.player.x = minX; if (this.player.body.velocity.x < 0) this.player.setVelocityX(0); }
 
     const sx = cam.scrollX;
@@ -303,7 +303,7 @@ export default class GameScene extends Phaser.Scene {
     this.bossTriggered = true;
     const cam = this.cameras.main;
     this.tweens.add({ targets: cam, scrollX: BOSS_LOCK_X, duration: 900, ease: 'Sine.easeInOut' });
-    this.physics.world.setBounds(BOSS_LOCK_X, 0, GAME_W, GAME_H);
+    this.physics.world.setBounds(BOSS_LOCK_X + SCREEN_LEFT_MARGIN, 0, GAME_W - SCREEN_LEFT_MARGIN, GAME_H);
     Sfx.alarm();
     this.showBanner('ALERTA! MEGA DRAGA', 2200, '#ff4d4d', 'Garimpo ilegal no rio — destrua a draga!');
 

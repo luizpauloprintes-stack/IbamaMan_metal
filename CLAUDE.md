@@ -28,12 +28,13 @@ src/config/
   weapons.js               tabela de armas PISTOL/H/R/F + Carga de Demolição (BOMB)
   missions.js              as 4 missões da campanha (só a playable=true tem fase)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
+  controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
 src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
 src/scenes/
   BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações
   GameScene.js             fase, câmera, colisões, ondas, gaiolas, power-ups, chefe, vitória/game over
-  UIScene.js               HUD + controles touch multi-toque e teclado (sobreposta à GameScene)
+  UIScene.js               HUD + direcional flutuante + botões touch e teclado (sobreposta à GameScene)
 src/objects/
   Player.js                movimento, pulo, agachar, armas, munição, bomba, dano/vidas
   Miner.js                 garimpeiro com mangueira (anda até o jogador e lança lama em parábola)
@@ -48,6 +49,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 ### Fluxo entre cenas
 - `BootScene` → `GameScene`; a `GameScene` lança a `UIScene` por cima.
 - **Controles:** a `UIScene` escreve em `registry.get('controls')` (`left/right/crouch/jump/fire/bomb` + bordas `jumpQueued`, `bombQueued`, `firePressed`). A `GameScene` lê e consome as bordas.
+- **Controles touch:** direcional *flutuante* (nasce onde o polegar toca na metade esquerda e some ao soltar); botões FIRE/JUMP/BOMB pequenos e translúcidos no canto direito, que quase somem quando o IbamaMan passa por trás. Só aparecem em aparelhos com toque. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
 - **HUD:** a `UIScene` faz *polling* de `GameScene.getHudState()` a cada quadro (evita listeners órfãos ao reiniciar a cena).
 
 ### Paisagem / Android

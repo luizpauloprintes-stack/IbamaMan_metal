@@ -8,3 +8,5 @@ export const BOSS_TRIGGER_X = 3450;   // jogador passa daqui -> trava câmera e 
 export const PLAYER_LIVES = 3;
 export const PLAYER_BOMBS = 10;
 export const DEPTH = { bg: 0, world: 10, enemies: 20, player: 30, shots: 40, water: 45, fx: 50 };
+export const CAMERA_LEAD_X = 340;     // posição do jogador na tela (px a partir da esquerda) enquanto avança
+export const SCREEN_LEFT_MARGIN = 90; // jogador não encosta na borda esquerda (fica fora do direcional)

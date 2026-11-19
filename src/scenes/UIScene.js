@@ -4,12 +4,10 @@ import { unlockAudio } from '../audio/Sfx.js';
 
 // HUD + controles (touch multi-toque e teclado). Escreve o estado em registry 'controls';
 // a GameScene lê esse objeto a cada quadro. Flags *Queued/*Pressed são "bordas" consumidas pela GameScene.
-const DPAD = { x: 112, y: 372, r: 72 };
-const BUTTONS = [
-  { id: 'jump', label: 'JUMP', x: 610, y: 398, r: 44, color: 0x2f74c0 },
-  { id: 'fire', label: 'FIRE', x: 718, y: 366, r: 50, color: 0xc0392b },
-  { id: 'bomb', label: 'BOMB', x: 742, y: 262, r: 36, color: 0xe67e22 }
-];
+// Direcional FLUTUANTE: aparece onde o polegar toca na metade esquerda e some ao soltar,
+// para não ficar desenhado por cima do IbamaMan.
+import { STICK, BUTTONS, CONTROL_ALPHA } from '../config/controls.js';
+
 const TXT = { fontFamily: 'monospace', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 };
 
 export default class UIScene extends Phaser.Scene {
@@ -63,29 +61,44 @@ export default class UIScene extends Phaser.Scene {
   }
 
   createTouchControls() {
+    this.touchEnabled = this.sys.game.device.input.touch;
+    this.stick = { pointerId: null, baseX: 0, baseY: 0, knobX: 0, knobY: 0 };
     this.pad = this.add.graphics();
     this.btnGfx = {};
     BUTTONS.forEach((b) => {
       const g = this.add.graphics();
-      const t = this.add.text(b.x, b.y, b.label, { ...TXT, fontSize: b.id === 'fire' ? '18px' : '15px', color: '#ffffff', strokeThickness: 3 }).setOrigin(0.5);
+      const t = this.add.text(b.x, b.y, b.label, { ...TXT, fontSize: b.id === 'fire' ? '14px' : '11px', color: '#ffffff', strokeThickness: 3 }).setOrigin(0.5);
       this.btnGfx[b.id] = { g, t, b };
     });
+    if (!this.touchEnabled) { this.pad.setVisible(false); Object.values(this.btnGfx).forEach(({ g, t }) => { g.setVisible(false); t.setVisible(false); }); }
   }
 
   readTouch() {
     const s = { left: false, right: false, crouch: false, jump: false, fire: false, bomb: false };
-    this.input.manager.pointers.forEach((p) => {
+    const st = this.stick;
+    const pointers = this.input.manager.pointers;
+
+    // solta o direcional se o dedo dele saiu da tela
+    if (st.pointerId !== null && !pointers.some((p) => p.id === st.pointerId && p.isDown)) st.pointerId = null;
+
+    pointers.forEach((p) => {
       if (!p.isDown) return;
-      const dx = p.x - DPAD.x; const dy = p.y - DPAD.y;
-      if (p.x < GAME_W * 0.45 && p.y > 200 && Math.hypot(dx, dy) < DPAD.r * 1.8) {
-        if (dx < -18) s.left = true;
-        if (dx > 18) s.right = true;
-        if (dy > 26) s.crouch = true;
+      if (p.id === st.pointerId) {
+        const dx = p.x - st.baseX; const dy = p.y - st.baseY;
+        const len = Math.hypot(dx, dy) || 1; const k = Math.min(1, STICK.radius / len);
+        st.knobX = st.baseX + dx * k; st.knobY = st.baseY + dy * k;
+        if (dx < -STICK.deadX) s.left = true;
+        if (dx > STICK.deadX) s.right = true;
+        if (dy > STICK.crouchY) s.crouch = true;
         return;
       }
-      if (p.x > GAME_W * 0.55) {
+      if (st.pointerId === null && p.x < GAME_W * STICK.zoneMaxX) {
+        st.pointerId = p.id; st.baseX = p.x; st.baseY = p.y; st.knobX = p.x; st.knobY = p.y;
+        return;
+      }
+      if (p.x >= GAME_W * STICK.zoneMaxX) {
         let best = null; let bestD = Infinity;
-        BUTTONS.forEach((b) => { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < b.r * 1.45 && d < bestD) { best = b; bestD = d; } });
+        BUTTONS.forEach((b) => { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < b.r * CONTROL_ALPHA.hitScale && d < bestD) { best = b; bestD = d; } });
         if (best) s[best.id] = true;
       }
     });
@@ -115,22 +128,35 @@ export default class UIScene extends Phaser.Scene {
   }
 
   drawControls(c) {
-    const g = this.pad;
+    if (!this.touchEnabled) return;
+    const g = this.pad; const st = this.stick;
     g.clear();
-    g.fillStyle(0x000000, 0.28).fillCircle(DPAD.x, DPAD.y, DPAD.r);
-    g.lineStyle(2, 0xffffff, 0.35).strokeCircle(DPAD.x, DPAD.y, DPAD.r);
-    const arrow = (on, pts) => { g.fillStyle(0xffffff, on ? 0.9 : 0.4); g.fillTriangle(...pts); };
-    const { x, y } = DPAD;
-    arrow(c.left, [x - 60, y, x - 30, y - 20, x - 30, y + 20]);
-    arrow(c.right, [x + 60, y, x + 30, y - 20, x + 30, y + 20]);
-    arrow(c.crouch, [x, y + 60, x - 20, y + 30, x + 20, y + 30]);
+    if (st.pointerId !== null) {
+      g.fillStyle(0x000000, 0.18).fillCircle(st.baseX, st.baseY, STICK.radius);
+      g.lineStyle(2, 0xffffff, 0.3).strokeCircle(st.baseX, st.baseY, STICK.radius);
+      g.fillStyle(0xffffff, 0.45).fillCircle(st.knobX, st.knobY, STICK.knob);
+    } else {
+      const h = STICK.hint;
+      g.lineStyle(2, 0xffffff, 0.14).strokeCircle(h.x, h.y, h.r);
+      g.fillStyle(0xffffff, 0.14).fillCircle(h.x, h.y, 8);
+    }
+
+    // posição do IbamaMan na tela, para apagar o botão que estiver por cima dele
+    const gs = this.scene.get('GameScene');
+    const pl = gs && gs.player;
+    const cam = gs && gs.cameras && gs.cameras.main;
+    const px = pl && cam ? pl.x - cam.scrollX : -999;
+    const py = pl ? pl.y - 32 : -999;
 
     Object.values(this.btnGfx).forEach(({ g: bg, t, b }) => {
       const on = c[b.id];
+      const behind = Math.abs(px - b.x) < b.r + 20 && Math.abs(py - b.y) < b.r + 34;
+      const alpha = behind && !on ? CONTROL_ALPHA.behindPlayer : on ? CONTROL_ALPHA.pressed : CONTROL_ALPHA.idle;
+      const r = on ? b.r * 0.92 : b.r;
       bg.clear();
-      bg.fillStyle(b.color, on ? 0.85 : 0.42).fillCircle(b.x, b.y, on ? b.r * 0.94 : b.r);
-      bg.lineStyle(3, 0xffffff, on ? 0.95 : 0.5).strokeCircle(b.x, b.y, on ? b.r * 0.94 : b.r);
-      t.setAlpha(on ? 1 : 0.8);
+      bg.fillStyle(b.color, alpha).fillCircle(b.x, b.y, r);
+      bg.lineStyle(2, 0xffffff, Math.min(1, alpha + 0.15)).strokeCircle(b.x, b.y, r);
+      t.setAlpha(Math.min(1, alpha * 2.4));
     });
   }
 
