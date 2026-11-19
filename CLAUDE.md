@@ -28,7 +28,7 @@ src/config/
   weapons.js               tabela de armas PISTOL/H/R/F + Carga de Demolição (BOMB)
   missions.js              as 4 missões da campanha; CAMPAIGN = ordem das jogáveis (playable=true)
   levels.js                layout de cada fase jogável (fundo, terreno, plataformas, inimigos, ondas, chefe, cartão de vitória)
-  enemies.js               balanceamento de garimpeiro, madeireiro, Barão e acampamento (CAMP)
+  enemies.js               balanceamento de garimpeiro, madeireiro, Barão, acampamento (CAMP), Balsa-Fortaleza (FORTRESS) e revanche (BARON_FINAL)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
@@ -47,7 +47,7 @@ src/objects/
   FreedAnimal.js           animal libertado com movimento procedural (arara voa batendo asas, onça galopa,
                            macaco pula com cambalhota, peixe-boi mergulha no rio ou rasteja em terra)
   Camp.js                  "chefe" da Missão 2: acampamento defendido por ondas; HP = garimpeiros restantes
-  MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg)
+  MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg); com opts {hp, tint} vira a Balsa-Fortaleza
 android/                   projeto nativo gerado pelo Capacitor (versionado)
 public/assets/sprites/     spritesheets gerados + manifest.json
 tools/build_sheets.py      recorta as folhas de arte em spritesheets
@@ -78,11 +78,11 @@ tools/source_sheets/       as 8 folhas de arte originais
 | 1 | **Desmatamento** | floresta (bg_m1) com toras e um igarapé | madeireiros com motosserra, garimpeiros | **Barão do Garimpo** | **jogável** |
 | 2 | **Garimpo Amador** | igapó destruído (bg_m2), muitos tambores de Hg | garimpeiros com mangueira | **Acampamento** (3 ondas) | **jogável** |
 | 3 | **Garimpo com Dragas** | rio barrento com balsas e dragas | garimpeiros com mangueira | **Mega Draga** | **jogável** |
-| 4 | **Chefão do Garimpo** | Balsa-Fortaleza | garimpeiros, madeireiros | Barão do Garimpo + Balsa-Fortaleza | planejada |
+| 4 | **Chefão do Garimpo** | rio com floresta em chamas (bg_m4) | garimpeiros, madeireiros | **Balsa-Fortaleza → revanche do Barão** | **jogável** |
 
 ### Campanha e fluxo
 - A `GameScene` recebe `{ mission, score, lives }` em `scene.restart(data)` e monta a fase de `LEVELS[mission]`.
-- Vitória → "Toque em FIRE para a Missão N" (mantém pontos e vidas). Depois da última missão jogável: "FIM DA DEMO" e volta à primeira. Game over → repete a missão atual do zero.
+- Vitória → "Toque em FIRE para a Missão N" (mantém pontos e vidas). Depois da Missão 4: "CAMPANHA CONCLUÍDA!" e volta à Missão 1 (se alguma missão estiver com `playable: false`, aparece "FIM DA DEMO"). Game over → repete a missão atual do zero.
 - Para criar uma missão nova: adicione `LEVELS[id]` em `levels.js`, marque `playable: true` em `missions.js` e, se o chefe for novo, crie a classe com a mesma interface (`hp`, `maxHP`, `isTarget`, `defeated`, `enter()`, `takeDamage()`, `randomPoint()`, chamando `scene.onBossDefeated(this)`).
 
 ### Missão 1 — Desmatamento
@@ -106,6 +106,13 @@ tools/source_sheets/       as 8 folhas de arte originais
   - Estado 1 (HP > 500): jatos de rejeito em parábola + baldes de mercúrio rolantes.
   - Estado 2 (HP ≤ 500): frame avariado + tinta avermelhada, cadência maior, fumaça/explosões contínuas.
   - Derrota: 8 explosões a cada 250 ms, limpa inimigos, banner "ÁREA EMBARGADA! MISSION COMPLETE!", fanfarra sintetizada e cartão do rio restaurado (`bg_restored`).
+
+### Missão 4 — Chefão do Garimpo
+- Rio com floresta em chamas ao fundo (`bg_m4`, só o trecho do painel sem a draga pintada), balsas e plataformas, 4 gaiolas, madeireiros e garimpeiros misturados, apoio aéreo GEF.
+- Chefe em **dois estágios**:
+  1. **Balsa-Fortaleza** (`MegaDraga` com `FORTRESS`: 1300 HP, tinta de aço) com o Barão em pé no convés (sprite `rider`, só visual; fica com o rosto vermelho quando a fortaleza entra no estado 2).
+  2. Ao afundar a fortaleza, o Barão salta na água (`startBaronStage`) e começa a **revanche** (`Baron` com `BARON_FINAL`: 520 HP), com a barra trocando para "BARÃO DO GARIMPO".
+- Derrota do Barão: "BARÃO PRESO!", cartão "A AMAZÔNIA AGRADECE" e "CAMPANHA CONCLUÍDA!".
 
 ## Armas (`src/config/weapons.js`)
 
@@ -153,7 +160,7 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `ally_gef_agent` | 2 × 96×64 | genérico | inimigos_v2 + Sheet 04 |
 | `prop_hg_barrels` (2), `prop_logs`, `prop_sandbags` | 32×40, 64×40, 56×40 | genérico | Sheet 06 (tambores explodem em cadeia na demo) |
 | `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta = Missão 1, igapó destruído com céu em névoa = Missão 2, rio restaurado = cartão da vitória das Missões 2 e 3) |
-| `bg_m4` | cenário | genérico | Sheet 08 (Balsa-Fortaleza) |
+| `bg_m4` | cenário | genérico | Sheet 08 (só a parte esquerda: floresta em chamas e rio, sem a draga pintada) |
 | `plat_raft` | 128×48 (balsa de toras, deck a ~20% do topo) | 128×24 | hero_v2/cenarios_hd |
 
 Keys de `KEYS` sem desenho procedural próprio recebem um bloco genérico com o número certo de quadros (fallback em `generatePlaceholders`).

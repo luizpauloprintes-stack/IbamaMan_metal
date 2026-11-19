@@ -217,7 +217,7 @@ grad=np.linspace(0,1,sw.shape[0])[:,None,None]
 fill=((1-grad)*np.array([200,214,205])+grad*np.array([150,170,160])).astype(np.uint8)
 sw=np.where(sky[...,None],np.broadcast_to(fill,sw.shape),sw)
 panel("bg_m2",sw,(0,0,sw.shape[1],sw.shape[0]),[])
-panel("bg_m4",m4im,(22,48,999,436),[(915,46,1003,78),(915,198,1003,230),(915,352,1003,384)])
+panel("bg_m4",m4im,(22,48,282,380),[])   # só o trecho sem a draga pintada (a Balsa-Fortaleza é o chefe)
 panel("bg_restored",cen,(1636,771,2508,1150),[],mirror=False,h=135)   # rio restaurado HD (cartão da vitória)
 json.dump(manifest,open(f"{OUT}/manifest.json","w"),indent=1)
 print(len(manifest),"sheets")

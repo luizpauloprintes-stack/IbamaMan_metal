@@ -23,3 +23,7 @@ export const BARON = {
 
 // Missão 2: acampamento defendido por ondas (o "HP" é o número de garimpeiros restantes)
 export const CAMP = { width: 320, height: 90, firstDelay: 1600, spawnEvery: 650, maxAlive: 6 };
+
+// Missão 4: Balsa-Fortaleza (Mega Draga blindada) e a revanche do Barão
+export const FORTRESS = { hp: 1300, tint: 0xa9b2c4, riderScale: 1.0 };
+export const BARON_FINAL = { hp: 520 };

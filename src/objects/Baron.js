@@ -8,7 +8,8 @@ import { ts, setBodyLogical } from '../config/assets.js';
 // Abaixo de 50% de HP fica enfurecido (quadro 1, rosto vermelho): mais rápido e agressivo.
 // Mesma interface da MegaDraga: hp/maxHP, isTarget, defeated, enter(), takeDamage(), randomPoint().
 export default class Baron extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, arena) {
+  // opts: { hp } — a revanche da Missão 4 usa outro HP
+  constructor(scene, x, y, arena, opts = {}) {
     super(scene, x, y, 'boss_baron', 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -17,7 +18,7 @@ export default class Baron extends Phaser.Physics.Arcade.Sprite {
     setBodyLogical(this, w * 0.34, h * 0.86, w * 0.33, h * 0.14);
     this.body.setMaxVelocityY(900);
     this.arena = arena; // { left, right } em coordenadas do mundo
-    this.maxHP = BARON.hp;
+    this.maxHP = opts.hp || BARON.hp;
     this.hp = this.maxHP;
     this.phase = 1;
     this.isTarget = false;

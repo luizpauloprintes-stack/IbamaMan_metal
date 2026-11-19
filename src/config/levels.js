@@ -111,6 +111,42 @@ export const LEVELS = {
   }
 };
 
+// --------------------------------------------------------------------------
+// Missão 4 — Chefão do Garimpo: balsas no rio, todos os inimigos; Balsa-Fortaleza + revanche do Barão
+// --------------------------------------------------------------------------
+LEVELS[4] = {
+  levelW: 4400,
+  bg: 'bg_m4',
+  intro: 'Invada a Balsa-Fortaleza e prenda o Barão!',
+  terrain: [
+    ['mud', 0, 520], ['water', 520, 900], ['mud', 900, 1400], ['water', 1400, 2000],
+    ['mud', 2000, 2500], ['water', 2500, 2900], ['mud', 2900, 3500], ['water', 3500, 4400]
+  ],
+  platforms: [[420, 320], [700, 300], [1150, 310], [1600, 300], [1800, 250], [2250, 320], [2700, 300], [3100, 310]],
+  raft: { x: 2650, y: 335, minX: 2550, maxX: 2850, speed: 65 },
+  supplies: [[430, 280, 0], [1810, 210, 1], [2260, 280, 2], [3110, 270, 1]],
+  cages: [[1000, GROUND_Y, 0], [1350, GROUND_Y, 2], [2150, GROUND_Y, 1], [2880, GROUND_Y, 3]],
+  barrels: [[600, 1], [1250, 0], [1278, 1], [2420, 0], [2448, 1], [3300, 0], [3328, 1]],
+  decor: [['prop_sandbags', 300], ['prop_logs', 1100], ['prop_sandbags', 2080], ['prop_logs', 3000], ['prop_sandbags', 3420]],
+  enemies: [
+    ['miner', 650, GROUND_Y], ['logger', 1050, GROUND_Y], ['miner', 1160, 290], ['miner', 1600, 280],
+    ['logger', 2100, GROUND_Y], ['miner', 2260, 300], ['logger', 3000, GROUND_Y], ['miner', 3110, 290]
+  ],
+  waves: [
+    { at: 300, n: 3, side: 'right', type: 'miner' }, { at: 900, n: 2, side: 'right', type: 'logger' },
+    { at: 1500, n: 3, side: 'both', type: 'miner' }, { at: 2100, n: 3, side: 'right', type: 'logger' },
+    { at: 2700, n: 4, side: 'both', type: 'miner' }
+  ],
+  heliAt: 2300,
+  boss: {
+    type: 'fortress', name: 'BALSA-FORTALEZA',
+    alert: 'ALERTA! BALSA-FORTALEZA', alertSub: 'O Barão está no convés — derrube a fortaleza!',
+    finalName: 'BARÃO DO GARIMPO', finalAlert: 'O BARÃO NÃO DESISTE!', finalSub: 'Revanche: prenda o Barão!',
+    defeatText: 'BARÃO PRESO! +10000'
+  },
+  victory: { key: 'bg_restored', caption: 'A AMAZÔNIA AGRADECE' }
+};
+
 // Trava da câmera/arena do chefe a partir da largura da fase
 export const bossLockX = (lvl) => lvl.levelW - 800;
 export const bossTriggerX = (lvl) => lvl.levelW - 750;

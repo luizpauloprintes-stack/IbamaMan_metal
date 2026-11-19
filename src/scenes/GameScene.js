@@ -3,6 +3,7 @@ import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LE
 import { WEAPONS, HG_BARREL } from '../config/weapons.js';
 import { MISSIONS, CAMPAIGN } from '../config/missions.js';
 import { LEVELS, bossLockX, bossTriggerX, BOSS_SCORE } from '../config/levels.js';
+import { FORTRESS, BARON_FINAL } from '../config/enemies.js';
 import { FULL_BACKGROUND, REAL_KEYS, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
 import Miner from '../objects/Miner.js';
@@ -191,6 +192,7 @@ export default class GameScene extends Phaser.Scene {
     this.updateCamera();
     this.enemies.getChildren().forEach((e) => e.update(time));
     this.updateRaft();
+    this.updateRider();
     this.cleanup(time);
     this.checkTriggers();
 
@@ -379,8 +381,10 @@ export default class GameScene extends Phaser.Scene {
       this.boss = new Baron(this, lock + GAME_W - 12, GROUND_Y - 2, { left: lock + SCREEN_LEFT_MARGIN, right: lock + GAME_W });
       this.physics.add.collider(this.boss, this.groundBody);
     } else {
-      this.boss = new MegaDraga(this, lock + 640, GROUND_Y + 14);
+      const fortress = B.type === 'fortress';
+      this.boss = new MegaDraga(this, lock + 640, GROUND_Y + 14, fortress ? { hp: FORTRESS.hp, tint: FORTRESS.tint } : {});
       this.boss.x = lock + GAME_W - this.boss.displayWidth / 2 + 10;
+      if (fortress) this.spawnRider(this.boss);
     }
     this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP, name: B.name };
     if (this.boss.body) this.addBossColliders();
@@ -420,8 +424,54 @@ export default class GameScene extends Phaser.Scene {
         this.spawnExplosion(p.x, p.y, Phaser.Math.FloatBetween(1.1, 1.8), true);
         this.fx.debris(p.x, p.y, DEBRIS.metal, 10);
         this.cameras.main.shake(180, 0.012);
-        if (n === 8) this.finishMission(boss);
+        if (n === 8) {
+          if (this.level.boss.type === 'fortress' && !(boss instanceof Baron)) this.startBaronStage(boss);
+          else this.finishMission(boss);
+        }
       }
+    });
+  }
+
+  // Missão 4: o Barão fica no convés da Balsa-Fortaleza (só visual, acompanha o balanço da balsa)
+  spawnRider(fortress) {
+    this.rider = this.add.sprite(0, 0, 'boss_baron', 0).setOrigin(0.5, 1).setFlipX(true)
+      .setScale(ts('boss_baron') * FORTRESS.riderScale).setDepth(fortress.depth + 1);
+    this.riderOffset = { x: -fortress.displayWidth * 0.02, y: -fortress.displayHeight * 0.62 };
+  }
+
+  updateRider() {
+    if (!this.rider || !this.rider.active || this.riderJumping || !this.boss) return;
+    this.rider.setPosition(this.boss.x + this.riderOffset.x, this.boss.y + this.riderOffset.y);
+    if (this.boss.phase === 2 && this.rider.frame.name !== 1) this.rider.setFrame(1); // enfurece junto
+  }
+
+  // fortaleza destruída → o Barão salta para a água e começa a revanche
+  startBaronStage(fortress) {
+    const B = this.level.boss;
+    this.tweens.add({ targets: fortress, y: fortress.y + 140, alpha: 0, angle: -6, duration: 1600, onComplete: () => fortress.destroy() });
+    const r = this.rider;
+    this.riderJumping = true;
+    const landX = Phaser.Math.Clamp(r.x - 140, this.lockX + 300, this.lockX + GAME_W - 140);
+    this.tweens.add({ targets: r, x: landX, duration: 900, ease: 'Linear' });
+    this.tweens.add({
+      targets: r, y: r.y - 60, duration: 380, ease: 'Quad.easeOut',
+      onComplete: () => this.tweens.add({
+        targets: r, y: GROUND_Y, duration: 520, ease: 'Quad.easeIn',
+        onComplete: () => {
+          this.fx.debris(r.x, GROUND_Y - 6, DEBRIS.water, 12);
+          this.cameras.main.shake(200, 0.01);
+          r.destroy(); this.rider = null; this.riderJumping = false;
+          const lock = this.lockX;
+          this.boss = new Baron(this, landX, GROUND_Y - 2, { left: lock + SCREEN_LEFT_MARGIN, right: lock + GAME_W }, { hp: BARON_FINAL.hp });
+          this.physics.add.collider(this.boss, this.groundBody);
+          this.addBossColliders();
+          this.boss.home = landX;              // já está na arena: começa a lutar
+          this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP, name: B.finalName };
+          this.ended = false;
+          this.showBanner(B.finalAlert, 2000, '#ff4d4d', B.finalSub);
+          Sfx.alarm();
+        }
+      })
     });
   }
 
@@ -460,7 +510,9 @@ export default class GameScene extends Phaser.Scene {
       this.canRestart = true;
       this.won = true;
       const next = this.nextMission();
-      const sub = next ? `Toque em FIRE para a Missão ${next}` : 'FIM DA DEMO — toque em FIRE para recomeçar';
+      const allDone = CAMPAIGN.length === MISSIONS.length;
+      const sub = next ? `Toque em FIRE para a Missão ${next}`
+        : allDone ? 'CAMPANHA CONCLUÍDA! Toque em FIRE para jogar de novo' : 'FIM DA DEMO — toque em FIRE para recomeçar';
       this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', sub);
     });
   }

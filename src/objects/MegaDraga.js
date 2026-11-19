@@ -9,7 +9,8 @@ const PHASE2_TINT = 0xff8866;
 // Estado 1 (HP > 500): jatos de rejeito em parábola + baldes de Hg rolantes.
 // Estado 2 (HP <= 500): visual avariado/avermelhado, cadência maior, fumaça e explosões contínuas.
 export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y) {
+  // opts: { hp, tint } — a Balsa-Fortaleza da Missão 4 é uma versão blindada (mais HP, tinta de aço)
+  constructor(scene, x, y, opts = {}) {
     super(scene, x, y, 'boss_mega_draga', 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -20,7 +21,9 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     // casco (sem os jatos de lama desenhados à esquerda)
     setBodyLogical(this, w * 0.7, h * 0.66, w * 0.27, h * 0.34);
 
-    this.maxHP = 1000;
+    this.maxHP = opts.hp || 1000;
+    this.baseTint = opts.tint || null;
+    if (this.baseTint) this.setTint(this.baseTint);
     this.hp = this.maxHP;
     this.phase = 1;
     this.active_ = false;   // atacando
@@ -100,7 +103,7 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
 
   restoreTint() {
     if (!this.active) return;
-    if (this.phase === 2) this.setTint(PHASE2_TINT); else this.clearTint();
+    if (this.phase === 2) this.setTint(PHASE2_TINT); else if (this.baseTint) this.setTint(this.baseTint); else this.clearTint();
   }
 
   enterPhase2() {
