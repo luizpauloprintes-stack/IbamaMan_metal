@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { WEAPONS, BOMB } from '../config/weapons.js';
 import { PLAYER_LIVES, PLAYER_BOMBS, DEPTH } from '../config/constants.js';
 import { Sfx } from '../audio/Sfx.js';
+import { ts, setBodyLogical } from '../config/assets.js';
 
 const RUN_SPEED = 170;
 const CRAWL_SPEED = 60;
@@ -12,7 +13,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'player_pose', 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setOrigin(0.5, 1).setDepth(DEPTH.player);
+    this.setOrigin(0.5, 1).setDepth(DEPTH.player).setScale(ts('player_pose'));
     this.standBody();
     this.body.setMaxVelocityY(900);
 
@@ -27,12 +28,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.crouching = false;
     this.dead = false;
     this.locked = false; // vitória / cutscene
+    this.wasOnGround = true;
+    this.nextDust = 0;
 
-    this.muzzle = scene.add.image(0, 0, 'fx_muzzle').setDepth(DEPTH.shots).setVisible(false);
+    this.muzzle = scene.add.image(0, 0, 'fx_muzzle').setDepth(DEPTH.shots).setVisible(false).setScale(ts('fx_muzzle'));
   }
 
-  standBody() { this.body.setSize(24, 56).setOffset(20, 8); }
-  crouchBody() { this.body.setSize(24, 40).setOffset(20, 24); }
+  // unidades lógicas (quadro de 64x64)
+  standBody() { setBodyLogical(this, 24, 56, 20, 8); }
+  crouchBody() { setBodyLogical(this, 24, 40, 20, 24); }
 
   get onGround() { return this.body.blocked.down || this.body.touching.down; }
   get invulnerable() { return this.scene.time.now < this.invulnUntil || this.locked; }
@@ -66,6 +70,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (c.fire && time >= this.nextFire) this.fire(time);
     if (c.bombQueued) { c.bombQueued = false; this.throwBomb(time); }
+
+    // poeira nas botas: ao correr no chão e ao aterrissar
+    const grounded = this.onGround;
+    if (grounded && !this.wasOnGround) this.scene.fx.dust(this.x, this.y, 4);
+    else if (grounded && Math.abs(this.body.velocity.x) > 150 && time >= this.nextDust) { this.nextDust = time + 140; this.scene.fx.dust(this.x - this.facing * 8, this.y, 1, this.facing); }
+    this.wasOnGround = grounded;
 
     this.updateAnim(time, dir, c.fire);
     if (this.muzzle.visible && time > this.muzzleUntil) this.muzzle.setVisible(false);
@@ -109,6 +119,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.muzzle.setPosition(p.x + this.facing * 8, p.y).setFlipX(this.facing < 0).setVisible(true);
     this.muzzleUntil = time + 50;
+    if (w.kind === 'bullet') this.scene.fx.casing(this.x + this.facing * 6, p.y + 2, this.facing);
     Sfx.shoot(w.id);
 
     if (this.ammo > 0) {
@@ -121,7 +132,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.bombs <= 0) return;
     this.bombs -= 1;
     const b = this.scene.bombs.create(this.x + this.facing * 14, this.y - 44, BOMB.texture);
-    b.setDepth(DEPTH.shots);
+    b.setDepth(DEPTH.shots).setScale(ts(BOMB.texture));
     b.isShot = true;
     b.kind = 'bomb';
     b.damage = BOMB.damage;

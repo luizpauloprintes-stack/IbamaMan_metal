@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN } from '../config/constants.js';
+import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y } from '../config/constants.js';
 import { WEAPONS } from '../config/weapons.js';
 import { DEMO_MISSION } from '../config/missions.js';
-import { FULL_BACKGROUND } from '../config/assets.js';
+import { FULL_BACKGROUND, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
 import Miner from '../objects/Miner.js';
 import Cage from '../objects/Cage.js';
 import MegaDraga from '../objects/MegaDraga.js';
 import { Sfx } from '../audio/Sfx.js';
+import Particles, { DEBRIS } from '../gfx/Particles.js';
 
 // ----------------------------------------------------------------------------
 // Fase demonstrativa: rio barrento do garimpo (Missão 3 — Garimpo com Dragas)
@@ -46,11 +47,13 @@ export default class GameScene extends Phaser.Scene {
     this.waveIndex = 0;
     this.heliDone = false;
 
+    this.fx = new Particles(this);
     this.physics.world.setBounds(0, 0, LEVEL_W, GAME_H);
     this.physics.world.setBoundsCollision(true, true, true, false);
     const cam = this.cameras.main;
+    cam.setZoom(RENDER_ZOOM);
     cam.setBounds(0, 0, LEVEL_W, GAME_H);
-    cam.setRoundPixels(true);
+    this.setViewLeft(0);
 
     this.buildBackground();
     this.buildTerrain();
@@ -68,26 +71,27 @@ export default class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- cenário
   buildBackground() {
-    this.bgSky = this.add.tileSprite(0, 0, GAME_W, GAME_H, 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
+    this.bgSky = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y, GAME_W, GAME_H, 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
     if (FULL_BACKGROUND) {
       const t = this.textures.get('bg_sky').getSourceImage();
       this.bgSky.setTileScale(GAME_H / t.height);
+      this.bgTileScale = GAME_H / t.height;
       this.bgForest = null; this.bgRiver = null;
       return;
     }
-    this.bgForest = this.add.tileSprite(0, 150, GAME_W, 180, 'bg_forest').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 1);
-    this.bgRiver = this.add.tileSprite(0, 320, GAME_W, 90, 'bg_river').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 2);
+    this.bgForest = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y + 150, GAME_W, 180, 'bg_forest').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 1);
+    this.bgRiver = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y + 320, GAME_W, 90, 'bg_river').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 2);
   }
 
   buildTerrain() {
     this.waterStrips = [];
     LEVEL.terrain.forEach(([type, x0, x1]) => {
       if (type === 'mud') {
-        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'ground_mud').setOrigin(0).setDepth(DEPTH.world);
+        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'ground_mud').setOrigin(0).setDepth(DEPTH.world).setTileScale(ts('ground_mud'));
       } else {
-        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'water').setOrigin(0).setDepth(DEPTH.world).setTint(0x8a7a5a);
+        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'water').setOrigin(0).setDepth(DEPTH.world).setTint(0x8a7a5a).setTileScale(ts('water'));
         // lâmina d'água na frente dos personagens (efeito de vadear)
-        this.waterStrips.push(this.add.tileSprite(x0, GROUND_Y - 12, x1 - x0, 52, 'water').setOrigin(0).setDepth(DEPTH.water).setAlpha(0.88));
+        this.waterStrips.push(this.add.tileSprite(x0, GROUND_Y - 12, x1 - x0, 52, 'water').setOrigin(0).setDepth(DEPTH.water).setAlpha(0.88).setTileScale(ts('water')));
       }
     });
     // corpo físico contínuo do leito/barranco
@@ -96,15 +100,15 @@ export default class GameScene extends Phaser.Scene {
 
     this.platforms = this.physics.add.staticGroup();
     LEVEL.platforms.forEach(([x, y]) => {
-      const p = this.platforms.create(x, y, 'plat_wood').setDepth(DEPTH.world + 2);
+      const p = this.platforms.create(x, y, 'plat_wood').setDepth(DEPTH.world + 2).setScale(ts('plat_wood'));
       this.oneWay(p.body);
       p.refreshBody();
     });
 
     const r = LEVEL.raft;
-    this.raft = this.physics.add.image(r.x, r.y, 'plat_raft').setDepth(DEPTH.world + 2);
+    this.raft = this.physics.add.image(r.x, r.y, 'plat_raft').setDepth(DEPTH.world + 2).setScale(ts('plat_raft'));
     this.raft.body.setAllowGravity(false).setImmovable(true).setVelocityX(r.speed);
-    this.raft.body.setSize(128, 12).setOffset(0, 0);
+    setBodyLogical(this.raft, 128, 12, 0, 0);
     this.oneWay(this.raft.body);
   }
 
@@ -192,17 +196,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateCamera() {
-    const cam = this.cameras.main;
+    const left = this.viewLeft;
     if (!this.bossTriggered) {
       const target = Phaser.Math.Clamp(this.player.x - CAMERA_LEAD_X, 0, BOSS_LOCK_X);
-      if (target > cam.scrollX) cam.scrollX = Math.min(cam.scrollX + Math.max(2, (target - cam.scrollX) * 0.2), target);
+      if (target > left) this.setViewLeft(Math.min(left + Math.max(2, (target - left) * 0.2), target));
     }
     // estilo arcade: não dá para voltar além da borda esquerda da tela
-    const minX = cam.scrollX + (cam.scrollX > 0 ? SCREEN_LEFT_MARGIN : 16);
+    const minX = this.viewLeft + (this.viewLeft > 0 ? SCREEN_LEFT_MARGIN : 16);
     if (this.player.x < minX && !this.player.dead) { this.player.x = minX; if (this.player.body.velocity.x < 0) this.player.setVelocityX(0); }
 
-    const sx = cam.scrollX;
-    if (FULL_BACKGROUND) { this.bgSky.tilePositionX = sx * 0.3; return; }
+    const sx = this.viewLeft;
+    if (FULL_BACKGROUND) { this.bgSky.tilePositionX = (sx * 0.3) / this.bgTileScale; return; }
     this.bgSky.tilePositionX = sx * 0.05;
     this.bgForest.tilePositionX = sx * 0.25;
     this.bgRiver.tilePositionX = sx * 0.5;
@@ -218,6 +222,7 @@ export default class GameScene extends Phaser.Scene {
     const v = this.cameras.main.worldView;
     this.playerShots.getChildren().slice().forEach((s) => {
       if (s.dieAt && time >= s.dieAt) { s.destroy(); return; }
+      if (s.kind === 'rocket' && Math.random() < 0.65) this.fx.puff(s.x - Math.sign(s.body.velocity.x) * 10, s.y, 0xe0e0e0, 0.8, 260);
       if (s.x < v.left - 60 || s.x > v.right + 60 || s.y < -60 || s.y > GAME_H + 60) s.destroy();
     });
     this.bombs.getChildren().slice().forEach((b) => { if (b.y > GAME_H + 60 || b.x > v.right + 200) b.destroy(); });
@@ -227,7 +232,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   checkTriggers() {
-    const sx = this.cameras.main.scrollX;
+    const sx = this.viewLeft;
     const w = LEVEL.waves[this.waveIndex];
     if (w && sx >= w.at) { this.waveIndex += 1; this.spawnWave(w); }
     if (!this.heliDone && sx >= LEVEL.heliAt) { this.heliDone = true; this.callHeli(); }
@@ -249,12 +254,13 @@ export default class GameScene extends Phaser.Scene {
   spawnMud(x, y, vx, vy, scale = 1) {
     const m = this.enemyShots.create(x, y, 'proj_mud');
     m.isMud = true;
-    m.setDepth(DEPTH.shots).setScale(scale);
+    m.setDepth(DEPTH.shots).setScale(scale * ts('proj_mud'));
     m.body.setVelocity(vx, vy).setAngularVelocity(Phaser.Math.Between(-300, 300));
     return m;
   }
 
   spawnSplash(x, y) {
+    this.fx.debris(x, y, DEBRIS.mud, 3);
     for (let i = 0; i < 4; i++) {
       const d = this.add.image(x, y, 'proj_mud').setScale(0.45).setDepth(DEPTH.fx);
       this.tweens.add({ targets: d, x: x + Phaser.Math.Between(-24, 24), y: y - Phaser.Math.Between(8, 26), alpha: 0, duration: 300, onComplete: () => d.destroy() });
@@ -263,14 +269,15 @@ export default class GameScene extends Phaser.Scene {
 
   spawnBucket(x, y, vx) {
     const b = this.buckets.create(x, y, 'hazard_hg_bucket');
-    b.setDepth(DEPTH.enemies + 1).setBounce(0.25);
-    b.body.setSize(20, 20).setVelocityX(vx).setAngularVelocity(vx * 2.6);
+    b.setDepth(DEPTH.enemies + 1).setBounce(0.25).setScale(ts('hazard_hg_bucket'));
+    setBodyLogical(b, 20, 20, 2, 2);
+    b.body.setVelocityX(vx).setAngularVelocity(vx * 2.6);
     b.hp = 10;
     b.isTarget = true;
     b.takeDamage = (d) => {
       if (!b.active) return;
       b.hp -= d;
-      if (b.hp <= 0) { this.addScore(50, b.x, b.y - 20); this.spawnExplosion(b.x, b.y, 0.5); b.destroy(); }
+      if (b.hp <= 0) { this.addScore(50, b.x, b.y - 20); this.spawnExplosion(b.x, b.y, 0.5); this.fx.debris(b.x, b.y, DEBRIS.metal, 6); this.fx.debris(b.x, b.y, DEBRIS.hg, 4); b.destroy(); }
     };
     return b;
   }
@@ -278,7 +285,8 @@ export default class GameScene extends Phaser.Scene {
   callHeli() {
     this.showBanner('APOIO AÉREO GEF!', 1800, '#7dff7d', '');
     const v = this.cameras.main.worldView;
-    const heli = this.add.image(v.left - 200, 95, 'ally_gef_heli').setDepth(DEPTH.fx).setScrollFactor(0);
+    // helicóptero em coordenadas de tela (scrollFactor 0 + deslocamento do zoom)
+    const heli = this.add.image(VIEW_OFF_X - 200, VIEW_OFF_Y + 95, 'ally_gef_heli').setDepth(DEPTH.fx).setScrollFactor(0).setScale(ts('ally_gef_heli'));
     const fire = this.time.addEvent({
       delay: 350, loop: true,
       callback: () => {
@@ -286,7 +294,7 @@ export default class GameScene extends Phaser.Scene {
         const foes = this.enemies.getChildren().filter((e) => e.isTarget && e.x > view.left && e.x < view.right);
         if (!foes.length) return;
         const e = Phaser.Utils.Array.GetRandom(foes);
-        const hx = view.left + heli.x; const hy = heli.y + 40;
+        const hx = view.left + heli.x - VIEW_OFF_X; const hy = heli.y - VIEW_OFF_Y + 40;
         const g = this.add.graphics().setDepth(DEPTH.fx);
         g.lineStyle(2, 0x66ff66, 1).lineBetween(hx, hy, e.x, e.y - 30);
         this.time.delayedCall(70, () => g.destroy());
@@ -294,21 +302,21 @@ export default class GameScene extends Phaser.Scene {
         e.takeDamage(30);
       }
     });
-    this.tweens.add({ targets: heli, x: GAME_W + 220, duration: 5200, ease: 'Linear', onComplete: () => { fire.remove(false); heli.destroy(); } });
-    this.tweens.add({ targets: heli, y: 105, duration: 600, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: heli, x: VIEW_OFF_X + GAME_W + 220, duration: 5200, ease: 'Linear', onComplete: () => { fire.remove(false); heli.destroy(); } });
+    this.tweens.add({ targets: heli, y: VIEW_OFF_Y + 105, duration: 600, yoyo: true, repeat: -1 });
   }
 
   // ---------------------------------------------------------------- chefe
   startBoss() {
     this.bossTriggered = true;
     const cam = this.cameras.main;
-    this.tweens.add({ targets: cam, scrollX: BOSS_LOCK_X, duration: 900, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: cam, scrollX: BOSS_LOCK_X - VIEW_OFF_X, duration: 900, ease: 'Sine.easeInOut' });
     this.physics.world.setBounds(BOSS_LOCK_X + SCREEN_LEFT_MARGIN, 0, GAME_W - SCREEN_LEFT_MARGIN, GAME_H);
     Sfx.alarm();
     this.showBanner('ALERTA! MEGA DRAGA', 2200, '#ff4d4d', 'Garimpo ilegal no rio — destrua a draga!');
 
     this.boss = new MegaDraga(this, BOSS_LOCK_X + 640, GROUND_Y + 14);
-    this.boss.x = BOSS_LOCK_X + GAME_W - this.boss.width / 2 + 10;
+    this.boss.x = BOSS_LOCK_X + GAME_W - this.boss.displayWidth / 2 + 10;
     this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP };
     this.physics.add.overlap(this.playerShots, this.boss, (a, b) => this.onShotHit(a, b));
     this.physics.add.overlap(this.bombs, this.boss, (a, b) => this.detonate(a.isShot ? a : b));
@@ -335,6 +343,7 @@ export default class GameScene extends Phaser.Scene {
         n += 1;
         const p = boss.randomPoint();
         this.spawnExplosion(p.x, p.y, Phaser.Math.FloatBetween(1.1, 1.8), true);
+        this.fx.debris(p.x, p.y, DEBRIS.metal, 10);
         this.cameras.main.shake(180, 0.012);
         if (n === 8) this.finishMission(boss);
       }
@@ -369,6 +378,7 @@ export default class GameScene extends Phaser.Scene {
     target.takeDamage(shot.damage);
     this.syncBoss(target);
     this.spark(shot.x, shot.y);
+    this.fx.sparks(shot.x, shot.y, target === this.boss ? 3 : 2);
     shot.destroy();
   }
 
@@ -399,7 +409,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   spawnExplosion(x, y, scale = 1, big = false, quiet = false) {
-    const e = this.add.sprite(x, y, 'fx_explosion', 0).setScale(scale).setDepth(DEPTH.fx);
+    const e = this.add.sprite(x, y, 'fx_explosion', 0).setScale(scale * ts('fx_explosion')).setDepth(DEPTH.fx);
     e.play('fx-explosion');
     e.once('animationcomplete', () => e.destroy());
     if (!quiet) Sfx.explosion(big);
@@ -407,7 +417,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   spark(x, y) {
-    const s = this.add.image(x, y, 'fx_muzzle').setDepth(DEPTH.fx).setScale(0.7);
+    const s = this.add.image(x, y, 'fx_muzzle').setDepth(DEPTH.fx).setScale(0.7 * ts('fx_muzzle'));
     this.time.delayedCall(40, () => s.destroy());
   }
 
@@ -415,8 +425,8 @@ export default class GameScene extends Phaser.Scene {
   spawnPickup(x, y, frame, pop = true) {
     const p = this.pickups.create(x, y, 'powerups_hrf', frame);
     p.kindFrame = frame;
-    p.setDepth(DEPTH.world + 3).setBounce(0.3);
-    p.body.setSize(26, 28).setOffset(3, 3);
+    p.setDepth(DEPTH.world + 3).setBounce(0.3).setScale(ts('powerups_hrf'));
+    setBodyLogical(p, 26, 28, 3, 3);
     if (pop) p.body.setVelocity(Phaser.Math.Between(-40, 40), -260);
     return p;
   }
@@ -441,7 +451,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   popup(x, y, text, color) {
-    const t = this.add.text(x, y, text, { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color, stroke: '#000', strokeThickness: 3 })
+    const t = this.add.text(x, y, text, { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color, stroke: '#000', strokeThickness: 3, resolution: RENDER_ZOOM })
       .setOrigin(0.5).setDepth(DEPTH.fx + 5);
     this.tweens.add({ targets: t, y: y - 36, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
   }
@@ -449,6 +459,10 @@ export default class GameScene extends Phaser.Scene {
   showBanner(text, ms, color = '#ffd23f', sub = '') {
     this.banner = { text, sub, color, until: ms ? this.time.now + ms : Infinity };
   }
+
+  // Borda esquerda visível do mundo (unidades lógicas), compensando o zoom centralizado da câmera.
+  get viewLeft() { return this.cameras.main.scrollX + VIEW_OFF_X; }
+  setViewLeft(x) { this.cameras.main.scrollX = x - VIEW_OFF_X; }
 
   // Estado lido pela UIScene a cada quadro (HUD por polling — sem eventos órfãos entre reinícios).
   getHudState() {

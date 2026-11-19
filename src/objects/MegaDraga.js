@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DEPTH, GROUND_Y, GRAVITY_Y } from '../config/constants.js';
 import { Sfx } from '../audio/Sfx.js';
+import { ts, setBodyLogical } from '../config/assets.js';
 
 const PHASE2_TINT = 0xff8866;
 
@@ -12,10 +13,11 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'boss_mega_draga', 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setOrigin(0.5, 1).setDepth(DEPTH.enemies - 1);
+    this.setOrigin(0.5, 1).setDepth(DEPTH.enemies - 1).setScale(ts('boss_mega_draga'));
     this.body.setAllowGravity(false).setImmovable(true);
     // corpo proporcional ao quadro (placeholder 320x220 ou sheet real 340x150)
-    this.body.setSize(this.width * 0.8, this.height * 0.68).setOffset(this.width * 0.15, this.height * 0.32);
+    const w = this.displayWidth; const h = this.displayHeight;
+    setBodyLogical(this, w * 0.8, h * 0.68, w * 0.15, h * 0.32);
 
     this.maxHP = 1000;
     this.hp = this.maxHP;
@@ -28,7 +30,7 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     this.smokeTimer = null;
   }
 
-  get hoseMouth() { return { x: this.x - this.width * 0.44, y: this.y - this.height * 0.55 }; }
+  get hoseMouth() { return { x: this.x - this.displayWidth * 0.44, y: this.y - this.displayHeight * 0.55 }; }
 
   enter(onReady) {
     const targetX = this.x;
@@ -81,8 +83,8 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
 
   rollBucket() {
     const speed = this.phase === 1 ? 150 : 230;
-    this.scene.spawnBucket(this.x - this.width * 0.42, GROUND_Y - 40, -speed);
-    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - this.width * 0.42, GROUND_Y - 40, -speed * 0.75));
+    this.scene.spawnBucket(this.x - this.displayWidth * 0.42, GROUND_Y - 40, -speed);
+    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - this.displayWidth * 0.42, GROUND_Y - 40, -speed * 0.75));
   }
 
   takeDamage(dmg) {
@@ -113,6 +115,7 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
         if (this.defeated) return;
         const pt = this.randomPoint();
         this.scene.spawnExplosion(pt.x, pt.y, Phaser.Math.FloatBetween(0.4, 0.8), false, true);
+        this.scene.fx.puff(pt.x, pt.y - 20, 0x444444, 2.2, 900);
       }
     });
   }

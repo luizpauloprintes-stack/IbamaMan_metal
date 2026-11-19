@@ -38,8 +38,31 @@ def crop(key,box,keep="main",erase=()):
             ys,xs=sl
             if ys.start>1 and xs.start>1 and ys.stop<h-1 and xs.stop<w-1: km|=lab==i+1
         c[:,:,3]=np.where(km,c[:,:,3],0)
+    c=despill(c)
     ys,xs=np.where(c[:,:,3]>0)
     return c[ys.min():ys.max()+1, xs.min():xs.max()+1], x0+xs.min()
+
+def despill(c):
+    """Remove o halo claro (resto do fundo branco/compressão) nas bordas do recorte."""
+    a=c[:,:,3]>0
+    edge=a & ~cv2.erode(a.astype(np.uint8),np.ones((5,5),np.uint8)).astype(bool)  # faixa de ~2px na borda
+    rgb=c[:,:,:3].astype(np.int16); mn=rgb.min(axis=2); sat=rgb.max(axis=2)-mn
+    halo=edge & (mn>190) & (sat<30)
+    c[:,:,3]=np.where(halo,0,c[:,:,3])
+    soft=edge & ~halo & (mn>150) & (sat<25)          # cinza claro: escurece em vez de apagar
+    c[:,:,:3]=np.where(soft[...,None],(c[:,:,:3]*0.6).astype(np.uint8),c[:,:,:3])
+    return c
+
+RES=2   # resolução das texturas em relação às unidades lógicas do jogo (o jogo renderiza com zoom 2)
+OUTLINE=(18,24,20)  # BGR de #141812
+def outline(img):
+    """Contorno externo de 1px escuro, como nos sprites de Metal Slug."""
+    img=np.pad(img,((RES,RES),(RES,RES),(0,0)))
+    m=img[:,:,3]>0
+    k=2*RES+1-2   # contorno de 1px lógico (= RES px na textura)
+    ring=cv2.dilate(m.astype(np.uint8),np.ones((k,k),np.uint8)).astype(bool) & ~m
+    img[ring]=(*OUTLINE,255)
+    return img
 
 def resize(c,s):
     w=max(1,round(c.shape[1]*s)); h=max(1,round(c.shape[0]*s))
@@ -71,14 +94,16 @@ def place(frame,img,mode="bottom",ax=None):
 
 manifest=[]
 def sheet(key,FW,FH,frames):
-    """frames: list of dict(key,box,scale or fit,mode,anchor(src x),keep,erase,tint,flip)"""
+    """frames: list of dict(key,box,scale or fit,mode,anchor(src x),keep,erase,tint,flip). FW/FH/scale em unidades lógicas."""
+    FW*=RES; FH*=RES
     S=np.zeros((FH,FW*len(frames),4),np.uint8)
     for i,f in enumerate(frames):
         c,ox=crop(f["src"],f["box"],f.get("keep","main"),f.get("erase",()))
         if "fit" in f:
             s=min((FW-2)/c.shape[1],(FH-2)/c.shape[0])*f["fit"]
-        else: s=f["scale"]
+        else: s=f["scale"]*RES
         img=resize(c,s)
+        if f.get("outline",True): img=outline(img)
         if f.get("tint") is not None:
             t=np.array(f["tint"],np.float32); img[:,:,:3]=np.clip(img[:,:,:3]*0.45+t*0.55,0,255).astype(np.uint8)
         ax=None
@@ -86,7 +111,7 @@ def sheet(key,FW,FH,frames):
             ax=(f["anchor"]-ox)*s if "anchor" in f else (img.shape[1]/2 if "fit" in f else feet_x(img))
         place(S[:,i*FW:(i+1)*FW],img,f.get("mode","bottom"),ax)
     cv2.imwrite(f"{OUT}/{key}.png",S)
-    manifest.append({"key":key,"file":f"{key}.png","frameWidth":FW,"frameHeight":FH})
+    manifest.append({"key":key,"file":f"{key}.png","frameWidth":FW,"frameHeight":FH,"res":RES})
 
 R=62/395.; T=62/400.; V=62/465.
 run=[(10,236),(236,424),(424,612),(608,800),(796,1016)]
@@ -130,25 +155,27 @@ sheet("wildlife_cages",64,64,[dict(src=s,box=b,fit=1,keep=k) for s,b,k in cg])
 pu=[(610,36,775,194),(796,36,964,197),(607,196,775,357),(821,221,942,329),(787,388,883,482),(901,364,968,479)]
 sheet("powerups_hrf",32,32,[dict(src="items",box=b,fit=1) for b in pu])
 ex=[(581,563,645,634),(674,560,757,637),(786,563,855,632),(883,556,970,637),(575,706,674,802),(703,664,820,802),(838,656,985,802),(545,836,697,1012),(701,813,837,1012),(836,823,1006,1012)]
-sheet("fx_explosion",64,64,[dict(src="items",box=b,scale=0.36,mode="center",keep="all") for b in ex])
-sheet("fx_muzzle",16,16,[dict(src="items",box=(581,563,645,634),fit=1,mode="center",keep="all")])
+sheet("fx_explosion",64,64,[dict(src="items",box=b,scale=0.36,mode="center",keep="all",outline=False) for b in ex])
+sheet("fx_muzzle",16,16,[dict(src="items",box=(581,563,645,634),fit=1,mode="center",keep="all",outline=False)])
 sheet("proj_bomb",14,14,[dict(src="throw",box=(672,40,760,132),fit=1,mode="center")])
 sheet("hazard_hg_bucket",24,24,[dict(src="items",box=(45,560,142,702),fit=1,mode="center")])
 
 # texturas opacas de cenário
 bgim=cv2.imread(_path("bg"))
 def save(key,img):
-    cv2.imwrite(f"{OUT}/{key}.png",img); manifest.append({"key":key,"file":f"{key}.png"})
-save("ground_mud",cv2.resize(bgim[56:121,705:763],(64,64),interpolation=cv2.INTER_AREA))
-save("water",cv2.resize(bgim[905:957,252:316],(64,52),interpolation=cv2.INTER_AREA))
-save("plat_wood",cv2.resize(bgim[563:587,172:322],(96,16),interpolation=cv2.INTER_AREA))
-save("plat_raft",cv2.resize(bgim[928:986,42:240],(128,24),interpolation=cv2.INTER_AREA))
+    cv2.imwrite(f"{OUT}/{key}.png",img); manifest.append({"key":key,"file":f"{key}.png","res":RES})
+def up(img,w,h): return cv2.resize(img,(w*RES,h*RES),interpolation=cv2.INTER_AREA if img.shape[1]>w*RES else cv2.INTER_CUBIC)
+save("ground_mud",up(bgim[56:121,705:763],64,64))
+save("water",up(bgim[905:957,252:316],64,52))
+save("plat_wood",up(bgim[563:587,172:322],96,16))
+save("plat_raft",up(bgim[928:986,42:240],128,24))
 # fundo da Missão 3 (Rio de Dragas) sem os rótulos "Layer", espelhado para rolagem contínua
 m=np.zeros(bgim.shape[:2],np.uint8)
 for (a,b,c,d) in [(608,712,683,742),(608,802,683,832),(18,976,80,1005)]: m[b:d,a:c]=255
 inp=cv2.inpaint(bgim,m,7,cv2.INPAINT_TELEA)[712:1005,18:683]
-pan=cv2.resize(inp,(round(665*450/293),450),interpolation=cv2.INTER_CUBIC)
+pan=cv2.resize(inp,(round(665*450*RES/293),450*RES),interpolation=cv2.INTER_LANCZOS4)
+pan=cv2.addWeighted(pan,1.5,cv2.GaussianBlur(pan,(0,0),2.0),-0.5,0)   # leve nitidez após ampliar
 cv2.imwrite(f"{OUT}/bg_sky.jpg",np.hstack([pan,pan[:,::-1]]),[cv2.IMWRITE_JPEG_QUALITY,85])
-manifest.append({"key":"bg_sky","file":"bg_sky.jpg","full":True})
+manifest.append({"key":"bg_sky","file":"bg_sky.jpg","full":True,"res":RES})
 json.dump(manifest,open(f"{OUT}/manifest.json","w"),indent=1)
 print(len(manifest),"sheets")

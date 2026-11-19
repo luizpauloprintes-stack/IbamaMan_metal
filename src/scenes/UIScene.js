@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W } from '../config/constants.js';
+import { GAME_W, GAME_H, RENDER_ZOOM } from '../config/constants.js';
 import { unlockAudio } from '../audio/Sfx.js';
 
 // HUD + controles (touch multi-toque e teclado). Escreve o estado em registry 'controls';
@@ -8,12 +8,14 @@ import { unlockAudio } from '../audio/Sfx.js';
 // para não ficar desenhado por cima do IbamaMan.
 import { STICK, BUTTONS, CONTROL_ALPHA } from '../config/controls.js';
 
-const TXT = { fontFamily: 'monospace', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 };
+const TXT = { fontFamily: 'monospace', fontStyle: 'bold', stroke: '#000', strokeThickness: 4, resolution: RENDER_ZOOM };
 
 export default class UIScene extends Phaser.Scene {
   constructor() { super('UIScene'); }
 
   create() {
+    // mesma escala da GameScene: tudo da UI é posicionado em 800x450 e desenhado em alta resolução
+    this.cameras.main.setZoom(RENDER_ZOOM).centerOn(GAME_W / 2, GAME_H / 2);
     this.input.addPointer(2); // mouse/1º toque + 2 toques extras = multi-touch
     this.controls = {
       left: false, right: false, crouch: false, jump: false, fire: false, bomb: false,
@@ -81,8 +83,9 @@ export default class UIScene extends Phaser.Scene {
     // solta o direcional se o dedo dele saiu da tela
     if (st.pointerId !== null && !pointers.some((p) => p.id === st.pointerId && p.isDown)) st.pointerId = null;
 
-    pointers.forEach((p) => {
-      if (!p.isDown) return;
+    pointers.forEach((ptr) => {
+      if (!ptr.isDown) return;
+      const p = { id: ptr.id, x: ptr.x / RENDER_ZOOM, y: ptr.y / RENDER_ZOOM }; // canvas -> unidades lógicas
       if (p.id === st.pointerId) {
         const dx = p.x - st.baseX; const dy = p.y - st.baseY;
         const len = Math.hypot(dx, dy) || 1; const k = Math.min(1, STICK.radius / len);
@@ -145,7 +148,7 @@ export default class UIScene extends Phaser.Scene {
     const gs = this.scene.get('GameScene');
     const pl = gs && gs.player;
     const cam = gs && gs.cameras && gs.cameras.main;
-    const px = pl && cam ? pl.x - cam.scrollX : -999;
+    const px = pl && cam ? pl.x - gs.viewLeft : -999;
     const py = pl ? pl.y - 32 : -999;
 
     Object.values(this.btnGfx).forEach(({ g: bg, t, b }) => {

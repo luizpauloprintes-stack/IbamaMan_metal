@@ -22,7 +22,7 @@ O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push
 index.html                 canvas em tela cheia, touch-action: none
 capacitor.config.json      appId, appName, webDir: "dist"
 vite.config.js             base: './' (obrigatório para o WebView do Capacitor)
-src/main.js                Phaser.Game 800x450, pixelArt, Scale.FIT + CENTER_BOTH, Arcade gravidade y=900
+src/main.js                Phaser.Game (lógico 800x450, canvas 1600x900), pixelArt, Scale.FIT + CENTER_BOTH, Arcade gravidade y=900
 src/config/
   constants.js             dimensões, GROUND_Y, LEVEL_W, gatilho/trava do chefe, DEPTH
   weapons.js               tabela de armas PISTOL/H/R/F + Carga de Demolição (BOMB)
@@ -30,6 +30,7 @@ src/config/
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
+src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsulas, faíscas, estilhaços (teto de 140)
 src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
 src/scenes/
   BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações
@@ -45,6 +46,12 @@ public/assets/sprites/     spritesheets gerados + manifest.json
 tools/build_sheets.py      recorta as folhas de arte em spritesheets
 tools/source_sheets/       as 8 folhas de arte originais
 ```
+
+### Resolução (zoom 2)
+- Toda a lógica (posições, física, câmera, UI) usa unidades de **800x450**. O canvas tem `800x450 × RENDER_ZOOM` (= 1600x900) e as câmeras da `GameScene` e da `UIScene` usam `setZoom(RENDER_ZOOM)`.
+- A câmera tem zoom centralizado: use `gameScene.viewLeft` / `setViewLeft(x)` em vez de `cam.scrollX`. Objetos com `setScrollFactor(0)` somam `VIEW_OFF_X/VIEW_OFF_Y`.
+- Sprites reais são gerados em 2x (`res: 2` no manifest). Exiba com `setScale(ts(key))` e defina corpos com `setBodyLogical(obj, w, h, ox, oy)` em unidades lógicas (ambos em `src/config/assets.js`). Textos usam `resolution: RENDER_ZOOM`.
+- Na `UIScene`, ponteiros vêm em pixels do canvas: divida por `RENDER_ZOOM`.
 
 ### Fluxo entre cenas
 - `BootScene` → `GameScene`; a `GameScene` lança a `UIScene` por cima.
@@ -90,7 +97,7 @@ Com `ammo <= 0` a arma volta para `PISTOL`.
 ## Sprites (arte real + placeholders)
 
 A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria).
-`tools/build_sheets.py` remove o fundo branco, recorta cada quadro, alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
+`tools/build_sheets.py` remove o fundo branco e o halo claro das bordas, recorta cada quadro em **2x** (`RES=2`), desenha o contorno escuro de 1px lógico (#141812, estilo Metal Slug; não em explosões), alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
 
 ```bash
 pip install opencv-python-headless scipy numpy
@@ -98,6 +105,8 @@ python3 tools/build_sheets.py      # depois: npm run build
 ```
 
 O `BootScene` carrega tudo que está no `manifest.json`; **qualquer key ausente do manifest cai no placeholder procedural** de `src/gfx/placeholders.js` (hoje: projéteis `proj_bullet/hmg/rocket/flame/mud` e as camadas `bg_forest/bg_river`). `bg_sky` com `"full": true` é o cenário pintado completo da Missão 3 (espelhado para rolar sem emenda) e desliga as camadas procedurais.
+
+Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 
 | Key | Sheet real (quadros × px) | Placeholder | Origem |
 |---|---|---|---|
@@ -115,7 +124,7 @@ O `BootScene` carrega tudo que está no `manifest.json`; **qualquer key ausente 
 | `fx_muzzle`, `proj_bomb`, `hazard_hg_bucket` | 16, 14, 24 px | idem | Sheets 03/06 |
 | `ground_mud`, `water`, `plat_wood`, `plat_raft`, `bg_sky` | texturas | idem | Sheet 07 |
 
-Corpos físicos que dependem do tamanho do quadro são calculados a partir de `this.width/this.height` (Miner, MegaDraga), então trocar placeholder ↔ arte real não exige mudar código. Se mudar o tamanho de quadro do jogador (64×64), ajuste `standBody/crouchBody` em `Player.js`.
+Corpos físicos que dependem do tamanho do quadro são calculados a partir de `displayWidth/displayHeight` (Miner, MegaDraga), então trocar placeholder ↔ arte real não exige mudar código. Se mudar o tamanho de quadro do jogador (64×64), ajuste `standBody/crouchBody` em `Player.js`.
 
 ## Regras de código
 - JavaScript ES modules, sem TypeScript; uma classe por arquivo em `src/objects/` e `src/scenes/`.

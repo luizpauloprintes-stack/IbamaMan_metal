@@ -7,6 +7,16 @@ export const SPRITE_MANIFEST = manifest;
 // bg_sky "full" = cenário completo pintado (dispensa as camadas bg_forest/bg_river procedurais)
 export const FULL_BACKGROUND = manifest.some((s) => s.key === 'bg_sky' && s.full);
 
+// Resolução de cada textura em relação às unidades lógicas (res 2 = desenhada em dobro).
+const RES = Object.fromEntries(manifest.map((s) => [s.key, s.res || 1]));
+/** Escala para exibir a textura no tamanho lógico (1 para placeholders, 0.5 para sheets 2x). */
+export const ts = (key) => 1 / (RES[key] || 1);
+/** Define o corpo Arcade em unidades lógicas, independente da escala/resolução da textura. */
+export function setBodyLogical(go, w, h, ox, oy) {
+  const s = Math.abs(go.scaleX) || 1;
+  go.body.setSize(w / s, h / s, false).setOffset(ox / s, oy / s);
+}
+
 // Todas as keys usadas pelo jogo (placeholders gerados em src/gfx/placeholders.js)
 export const KEYS = {
   player_run: { frames: 5, w: 64, h: 64 },
@@ -23,6 +33,10 @@ export const KEYS = {
   powerups_hrf: { frames: 6, w: 32, h: 32 },      // H, R, F, medkit, açaí, abacaxi
   fx_explosion: { frames: 10, w: 64, h: 64 },
   fx_muzzle: { frames: 1, w: 16, h: 16 },
+  fx_smoke: { frames: 1, w: 12, h: 12 },  // baforada (rastro do míssil, poeira) — usar com setTint
+  fx_spark: { frames: 1, w: 4, h: 4 },
+  fx_shell: { frames: 1, w: 5, h: 3 },    // cápsula ejetada
+  fx_debris: { frames: 1, w: 6, h: 5 },   // estilhaço (madeira/metal) — usar com setTint
   proj_bullet: { frames: 1, w: 10, h: 4 },
   proj_hmg: { frames: 1, w: 14, h: 4 },
   proj_rocket: { frames: 1, w: 20, h: 8 },

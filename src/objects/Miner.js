@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DEPTH, GROUND_Y, GRAVITY_Y } from '../config/constants.js';
 import { Sfx } from '../audio/Sfx.js';
+import { ts, setBodyLogical } from '../config/assets.js';
 
 // Garimpeiro com mangueira: avança até o jogador e lança jatos de lama/rejeito em parábola.
 export default class Miner extends Phaser.Physics.Arcade.Sprite {
@@ -8,8 +9,9 @@ export default class Miner extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'enemy_miner_hose', 0);
     scene.add.existing(this);
     scene.enemies.add(this); // adiciona ao grupo ANTES de configurar o corpo (o grupo aplica defaults)
-    this.setOrigin(0.5, 1).setDepth(DEPTH.enemies).setFlipX(true);
-    this.body.setSize(26, 52).setOffset((this.width - 26) / 2, this.height - 52); // vale p/ placeholder 64px e sheet real 128px
+    this.setOrigin(0.5, 1).setDepth(DEPTH.enemies).setFlipX(true).setScale(ts('enemy_miner_hose'));
+    // corpo centrado nos pés, vale para placeholder 64px e sheet real 128 lógicos
+    setBodyLogical(this, 26, 52, (this.displayWidth - 26) / 2, this.displayHeight - 52);
     this.hp = 30;
     this.isTarget = true;
     this.state = 'walk';

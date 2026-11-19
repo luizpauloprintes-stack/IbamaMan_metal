@@ -2,118 +2,139 @@
  {
   "key": "player_run",
   "file": "player_run.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "player_shoot",
   "file": "player_shoot.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "player_pose",
   "file": "player_pose.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "player_bomb_win",
   "file": "player_bomb_win.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "enemy_miner_hose",
   "file": "enemy_miner_hose.png",
-  "frameWidth": 128,
-  "frameHeight": 64
+  "frameWidth": 256,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "enemy_logger",
   "file": "enemy_logger.png",
-  "frameWidth": 128,
-  "frameHeight": 64
+  "frameWidth": 256,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "ally_gef_heli",
   "file": "ally_gef_heli.png",
-  "frameWidth": 192,
-  "frameHeight": 128
+  "frameWidth": 384,
+  "frameHeight": 256,
+  "res": 2
  },
  {
   "key": "slug_boat",
   "file": "slug_boat.png",
-  "frameWidth": 128,
-  "frameHeight": 80
+  "frameWidth": 256,
+  "frameHeight": 160,
+  "res": 2
  },
  {
   "key": "slug_quad",
   "file": "slug_quad.png",
-  "frameWidth": 128,
-  "frameHeight": 80
+  "frameWidth": 256,
+  "frameHeight": 160,
+  "res": 2
  },
  {
   "key": "boss_mega_draga",
   "file": "boss_mega_draga.png",
-  "frameWidth": 440,
-  "frameHeight": 194
+  "frameWidth": 880,
+  "frameHeight": 388,
+  "res": 2
  },
  {
   "key": "wildlife_cages",
   "file": "wildlife_cages.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "powerups_hrf",
   "file": "powerups_hrf.png",
-  "frameWidth": 32,
-  "frameHeight": 32
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "res": 2
  },
  {
   "key": "fx_explosion",
   "file": "fx_explosion.png",
-  "frameWidth": 64,
-  "frameHeight": 64
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
  },
  {
   "key": "fx_muzzle",
   "file": "fx_muzzle.png",
-  "frameWidth": 16,
-  "frameHeight": 16
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "res": 2
  },
  {
   "key": "proj_bomb",
   "file": "proj_bomb.png",
-  "frameWidth": 14,
-  "frameHeight": 14
+  "frameWidth": 28,
+  "frameHeight": 28,
+  "res": 2
  },
  {
   "key": "hazard_hg_bucket",
   "file": "hazard_hg_bucket.png",
-  "frameWidth": 24,
-  "frameHeight": 24
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "res": 2
  },
  {
   "key": "ground_mud",
-  "file": "ground_mud.png"
+  "file": "ground_mud.png",
+  "res": 2
  },
  {
   "key": "water",
-  "file": "water.png"
+  "file": "water.png",
+  "res": 2
  },
  {
   "key": "plat_wood",
-  "file": "plat_wood.png"
+  "file": "plat_wood.png",
+  "res": 2
  },
  {
   "key": "plat_raft",
-  "file": "plat_raft.png"
+  "file": "plat_raft.png",
+  "res": 2
  },
  {
   "key": "bg_sky",
   "file": "bg_sky.jpg",
-  "full": true
+  "full": true,
+  "res": 2
  }
 ]

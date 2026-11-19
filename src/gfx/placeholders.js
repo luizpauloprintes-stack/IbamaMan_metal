@@ -265,6 +265,13 @@ function generateFx(scene) {
       blockyBurst(g, ox + 30, 30 - r * 0.6, Math.round(r * 0.5), (t) => (t < 0.6 ? (smoke ? 0x5a5a5a : 0xffb03a) : 0x3a3a3a));
     }
   });
+  makeSheet(scene, 'fx_smoke', 1, (g) => {
+    g.fillStyle(0xffffff, 0.9); g.fillRect(3, 0, 6, 12); g.fillRect(0, 3, 12, 6); g.fillRect(1, 1, 10, 10);
+    g.fillStyle(0xd0d0d0, 1); g.fillRect(3, 7, 6, 3);
+  });
+  makeSheet(scene, 'fx_spark', 1, (g) => { g.fillStyle(0xffe14d, 1); g.fillRect(0, 0, 4, 4); g.fillStyle(0xffffff, 1); g.fillRect(1, 1, 2, 2); });
+  makeSheet(scene, 'fx_shell', 1, (g) => { g.fillStyle(0xd9a521, 1); g.fillRect(0, 0, 5, 3); g.fillStyle(0xffe08a, 1); g.fillRect(0, 0, 5, 1); });
+  makeSheet(scene, 'fx_debris', 1, (g) => { g.fillStyle(0xffffff, 1); g.fillRect(0, 0, 6, 5); g.fillStyle(0xbbbbbb, 1); g.fillRect(0, 3, 6, 2); });
   makeSheet(scene, 'fx_muzzle', 1, (g, i, ox) => {
     drawMap(g, ['..Y.', 'YWYO', '.YY.', 'O..Y'], { Y: 0xffe14d, W: 0xffffff, O: 0xff8a1f }, ox, 0, 4);
   });
