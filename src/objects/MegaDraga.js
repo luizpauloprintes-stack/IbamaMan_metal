@@ -17,7 +17,8 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     this.body.setAllowGravity(false).setImmovable(true);
     // corpo proporcional ao quadro (placeholder 320x220 ou sheet real 340x150)
     const w = this.displayWidth; const h = this.displayHeight;
-    setBodyLogical(this, w * 0.8, h * 0.68, w * 0.15, h * 0.32);
+    // casco (sem os jatos de lama desenhados à esquerda)
+    setBodyLogical(this, w * 0.7, h * 0.66, w * 0.27, h * 0.34);
 
     this.maxHP = 1000;
     this.hp = this.maxHP;
@@ -30,7 +31,7 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
     this.smokeTimer = null;
   }
 
-  get hoseMouth() { return { x: this.x - this.displayWidth * 0.44, y: this.y - this.displayHeight * 0.55 }; }
+  get hoseMouth() { return { x: this.x - this.displayWidth * 0.27, y: this.y - this.displayHeight * 0.5 }; }
 
   enter(onReady) {
     const targetX = this.x;
@@ -83,8 +84,8 @@ export default class MegaDraga extends Phaser.Physics.Arcade.Sprite {
 
   rollBucket() {
     const speed = this.phase === 1 ? 150 : 230;
-    this.scene.spawnBucket(this.x - this.displayWidth * 0.42, GROUND_Y - 40, -speed);
-    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - this.displayWidth * 0.42, GROUND_Y - 40, -speed * 0.75));
+    this.scene.spawnBucket(this.x - this.displayWidth * 0.3, GROUND_Y - 40, -speed);
+    if (this.phase === 2) this.scene.time.delayedCall(400, () => !this.defeated && this.scene.spawnBucket(this.x - this.displayWidth * 0.3, GROUND_Y - 40, -speed * 0.75));
   }
 
   takeDamage(dmg) {

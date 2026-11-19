@@ -112,7 +112,8 @@ export default class GameScene extends Phaser.Scene {
     const r = LEVEL.raft;
     this.raft = this.physics.add.image(r.x, r.y, 'plat_raft').setDepth(DEPTH.world + 2).setScale(ts('plat_raft'));
     this.raft.body.setAllowGravity(false).setImmovable(true).setVelocityX(r.speed);
-    setBodyLogical(this.raft, 128, 12, 0, 0);
+    // superfície da balsa: ~20% do topo do quadro (vale para placeholder e arte HD)
+    setBodyLogical(this.raft, this.raft.displayWidth * 0.86, 12, this.raft.displayWidth * 0.07, this.raft.displayHeight * 0.2);
     this.oneWay(this.raft.body);
   }
 

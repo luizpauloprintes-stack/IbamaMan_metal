@@ -8,7 +8,7 @@ SRC=os.path.join(ROOT,"tools","source_sheets")
 OUT=sys.argv[1] if len(sys.argv)>1 else os.path.join(ROOT,"public","assets","sprites")
 H={"lineup":"01_elenco_personagens","run":"02_heroi_andar_atirar","throw":"03_heroi_bomba_comemoracao","enemies":"04_inimigos_gef_caixas","vehicles":"05_veiculos_mega_draga","items":"06_animais_powerups_explosoes","bg":"07_cenarios_missoes_1_a_3","m4":"08_cenario_missao_4_vitoria"}
 # IbamaMan v2 (artes em alta resolução enviadas depois das 8 folhas)
-H.update({"hv_kneel":"hero_v2/hero_agachado.png","hv_shoot":"hero_v2/hero_tiro.jpg","hv_run":"hero_v2/hero_corrida.jpg","hv_stand":"hero_v2/hero_parado.jpg","hv_idle":"hero_v2/hero_em_pe.png","ev2":"hero_v2/inimigos_v2.jpg"})
+H.update({"hv_kneel":"hero_v2/hero_agachado.png","hv_shoot":"hero_v2/hero_tiro.jpg","hv_run":"hero_v2/hero_corrida.jpg","hv_stand":"hero_v2/hero_parado.jpg","hv_idle":"hero_v2/hero_em_pe.png","ev2":"hero_v2/inimigos_v2.jpg","baron_n":"hero_v2/barao_normal.png","baron_f":"hero_v2/barao_furioso.png","heli2":"hero_v2/heli_gef.jpg","draga2":"hero_v2/mega_draga.jpg","itens2":"hero_v2/itens_hd.jpg","cen2":"hero_v2/cenarios_hd.jpg"})
 def _path(k): return os.path.join(SRC,H[k] if H[k].endswith((".jpg",".png")) else H[k]+".png")
 cache={}
 def rgba(key, thr=228):
@@ -109,6 +109,7 @@ def sheet(key,FW,FH,frames):
         else: s=f["scale"]*RES
         img=resize(c,s)
         if f.get("outline",True): img=outline(img)
+        if f.get("alpha") is not None: img[:,:,3]=(img[:,:,3]*f["alpha"]).astype(np.uint8)
         if f.get("tint") is not None:
             t=np.array(f["tint"],np.float32); img[:,:,:3]=np.clip(img[:,:,:3]*0.45+t*0.55,0,255).astype(np.uint8)
         ax=None
@@ -150,30 +151,34 @@ sheet("enemy_logger",128,84,[
     dict(src="ev2",box=(625,250,1170,1040),scale=L2),     # golpe com a lâmina erguida (v2)
     dict(src="enemies",box=(568,380,768,642),scale=L,anchor=665),
     dict(src="enemies",box=(782,380,1002,646),scale=L,anchor=900)])
-sheet("ally_gef_heli",192,128,[dict(src="vehicles",box=(213,312,868,668),fit=1,mode="center",keep="all")])
+sheet("ally_gef_heli",192,128,[dict(src="heli2",box=(215,138,2522,1006),fit=1,mode="center",keep="all")])
 boat=dict(src="vehicles",box=(60,38,556,276),fit=1)
 sheet("slug_boat",128,80,[boat,boat])
 quad=dict(src="vehicles",box=(658,30,938,276),fit=1)
 sheet("slug_quad",128,80,[quad,quad])
-dr=dict(src="vehicles",box=(268,716,992,1016),fit=1,keep="all")
-sheet("boss_mega_draga",440,194,[dr,dict(dr,tint=(25,40,120))])
-cg=[("items",(40,0,192,190),"all"),("items",(287,17,454,171),"main"),("items",(40,188,192,312),"main"),("items",(248,168,490,306),"main"),
-    ("items",(40,318,226,448),"main"),("items",(290,318,414,446),"main"),("items",(40,453,240,562),"main"),("items",(280,455,446,572),"main")]
-sheet("wildlife_cages",64,64,[dict(src=s,box=b,fit=1,keep=k) for s,b,k in cg])
-pu=[(610,36,775,194),(796,36,964,197),(607,196,775,357),(821,221,942,329),(787,388,883,482),(901,364,968,479)]
-sheet("powerups_hrf",32,32,[dict(src="items",box=b,fit=1) for b in pu])
-ex=[(581,563,645,634),(674,560,757,637),(786,563,855,632),(883,556,970,637),(575,706,674,802),(703,664,820,802),(838,656,985,802),(545,836,697,1012),(701,813,837,1012),(836,823,1006,1012)]
-sheet("fx_explosion",64,64,[dict(src="items",box=b,scale=0.36,mode="center",keep="all",outline=False) for b in ex])
-sheet("fx_muzzle",16,16,[dict(src="items",box=(581,563,645,634),fit=1,mode="center",keep="all",outline=False)])
+# Mega Draga HD: fumaça da chaminé removida (o jogo gera fumaça/explosões próprias)
+dr=dict(src="draga2",box=(26,330,2400,1592),fit=1,keep="all",erase=[(1600,0,2400,428)])
+sheet("boss_mega_draga",440,230,[dr,dict(dr,tint=(25,40,120))])
+# ---- itens HD (hero_v2/itens_hd): gaiolas/animais, power-ups e explosões ----
+cg=[(80,53,361,514),(434,71,829,510),(923,139,1495,510),(1555,191,2286,514),
+    (61,596,441,932),(525,630,884,936),(970,582,1532,948),(1641,630,2318,902)]
+sheet("wildlife_cages",64,64,[dict(src="itens2",box=b,fit=1,keep="all") for b in cg])
+pu=[(680,1032,1043,1352),(1081,1033,1443,1352),(1483,1033,1846,1352),(1917,1038,2301,1334),(70,1573,254,1728),(278,1467,419,1728)]
+sheet("powerups_hrf",32,32,[dict(src="itens2",box=b,fit=1) for b in pu])
+# 10 quadros a partir de 4 fases: clarão -> bola de fogo -> fogo escuro -> fumaça que some
+BURST=(489,1407,913,1743); BALL=(938,1414,1401,1743); DARK=(1427,1407,1866,1743); SMOKE=(1937,1407,2294,1743)
+ex=[(BURST,.35,1),(BURST,.6,1),(BURST,.85,1),(BALL,.9,1),(BALL,1,1),(DARK,1,1),(DARK,1,.9),(SMOKE,.95,.85),(SMOKE,1,.6),(SMOKE,1.05,.3)]
+sheet("fx_explosion",64,64,[dict(src="itens2",box=b,fit=k,mode="center",keep="all",outline=False,alpha=al) for b,k,al in ex])
+sheet("fx_muzzle",16,16,[dict(src="itens2",box=(489,1407,913,1743),fit=1,mode="center",keep="all",outline=False)])
 sheet("proj_bomb",14,14,[dict(src="throw",box=(672,40,760,132),fit=1,mode="center")])
-sheet("hazard_hg_bucket",24,24,[dict(src="items",box=(45,560,142,702),fit=1,mode="center")])
+sheet("hazard_hg_bucket",24,24,[dict(src="itens2",box=(70,998,309,1352),fit=1,mode="center")])
 
 # ---- extras para as Missões 1, 2 e 4 (e props da demo) ----
-sheet("boss_baron",96,84,[dict(src="lineup",box=(608,532,800,990),scale=80/455.,erase=[(608,820,645,990)]),
-                          dict(src="lineup",box=(790,532,1012,990),scale=80/455.)])   # Barão do Garimpo: normal, enfurecido
+sheet("boss_baron",96,84,[dict(src="baron_n",box=(300,105,871,1011),scale=80/898.),
+                          dict(src="baron_f",box=(224,88,867,1004),scale=80/912.)])   # Barão do Garimpo: normal, enfurecido
 sheet("ally_gef_agent",96,64,[dict(src="ev2",box=(2075,480,2576,1035),scale=62/545.),
                               dict(src="enemies",box=(276,680,433,962),scale=62/270.,anchor=340)])
-sheet("prop_hg_barrels",32,40,[dict(src="items",box=(45,560,142,702),fit=1),dict(src="items",box=(178,560,302,702),fit=1)])
+sheet("prop_hg_barrels",32,40,[dict(src="itens2",box=(70,998,309,1352),fit=1),dict(src="itens2",box=(364,998,603,1352),fit=1)])
 sheet("prop_logs",64,40,[dict(src="items",box=(305,575,493,690),fit=1)])
 sheet("prop_sandbags",56,40,[dict(src="items",box=(31,818,180,927),fit=1)])
 
@@ -185,7 +190,7 @@ def up(img,w,h): return cv2.resize(img,(w*RES,h*RES),interpolation=cv2.INTER_ARE
 save("ground_mud",up(bgim[56:121,705:763],64,64))
 save("water",up(bgim[905:957,252:316],64,52))
 save("plat_wood",up(bgim[563:587,172:322],96,16))
-save("plat_raft",up(bgim[928:986,42:240],128,24))
+sheet("plat_raft",128,48,[dict(src="cen2",box=(1870,1205,2304,1394),fit=1)])   # balsa de toras HD (deck ~20% do topo)
 def panel(key, img, box, labels, mirror=True, h=450):
     """Recorta um painel de cenário, apaga os rótulos 'Layer', amplia (Lanczos + nitidez) e espelha p/ rolagem."""
     x0,y0,x1,y1=box
@@ -202,9 +207,17 @@ def panel(key, img, box, labels, mirror=True, h=450):
 m4im=cv2.imread(_path("m4"))
 # fundo da Missão 3 (Rio de Dragas) = bg_sky, cenário completo usado na demo
 panel("bg_sky",bgim,(22,716,679,1001),[(606,712,683,744),(606,800,683,834),(18,972,96,1005)])["full"]=True
-panel("bg_m1",bgim,(22,48,679,328),[(608,44,683,72),(608,133,683,162),(18,300,96,332)])
-panel("bg_m2",bgim,(22,379,679,664),[(608,375,683,402),(608,460,683,490),(18,638,96,668),(608,640,683,668)])
+cen=cv2.imread(_path("cen2"))
+panel("bg_m1",cen,(70,62,2506,714),[])            # floresta preservada HD (Missão 1)
+# igapó destruído HD (Missão 2): o céu vazado (branco) vira névoa em degradê
+sw=cen[770:1385,68:1564].copy()
+near=sw.min(axis=2)>228; lab,_=ndimage.label(near)
+sky=np.isin(lab,list(set(np.unique(lab[0]))-{0}))
+grad=np.linspace(0,1,sw.shape[0])[:,None,None]
+fill=((1-grad)*np.array([200,214,205])+grad*np.array([150,170,160])).astype(np.uint8)
+sw=np.where(sky[...,None],np.broadcast_to(fill,sw.shape),sw)
+panel("bg_m2",sw,(0,0,sw.shape[1],sw.shape[0]),[])
 panel("bg_m4",m4im,(22,48,999,436),[(915,46,1003,78),(915,198,1003,230),(915,352,1003,384)])
-panel("bg_restored",m4im,(18,872,530,1007),[],mirror=False,h=135)
+panel("bg_restored",cen,(1636,771,2508,1150),[],mirror=False,h=135)   # rio restaurado HD (cartão da vitória)
 json.dump(manifest,open(f"{OUT}/manifest.json","w"),indent=1)
 print(len(manifest),"sheets")

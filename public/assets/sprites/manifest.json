@@ -66,7 +66,7 @@
   "key": "boss_mega_draga",
   "file": "boss_mega_draga.png",
   "frameWidth": 880,
-  "frameHeight": 388,
+  "frameHeight": 460,
   "res": 2
  },
  {
@@ -164,6 +164,8 @@
  {
   "key": "plat_raft",
   "file": "plat_raft.png",
+  "frameWidth": 256,
+  "frameHeight": 96,
   "res": 2
  },
  {

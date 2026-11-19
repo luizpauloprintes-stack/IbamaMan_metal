@@ -96,7 +96,7 @@ Com `ammo <= 0` a arma volta para `PISTOL`.
 
 ## Sprites (arte real + placeholders)
 
-A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria), e das artes em alta resolução de `tools/source_sheets/hero_v2/` (IbamaMan correndo, atirando parado, em pé, agachado e pulando; garimpeiro com jato, madeireiro e agente GEF), que têm prioridade sobre as folhas originais.
+A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria), e das artes em alta resolução de `tools/source_sheets/hero_v2/` (IbamaMan correndo, atirando parado, em pé, agachado e pulando; garimpeiro com jato, madeireiro, agente GEF, Barão do Garimpo, helicóptero GEF, Mega Draga e a folha de itens HD com gaiolas/animais, tambores, caixas H/R/F, kit médico, açaí, abacaxi e explosões), que têm prioridade sobre as folhas originais.
 `tools/build_sheets.py` remove o fundo branco e o halo claro das bordas, recorta cada quadro em **2x** (`RES=2`), desenha o contorno escuro de 1px lógico (#141812, estilo Metal Slug; não em explosões), alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
 
 ```bash
@@ -116,18 +116,20 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `player_bomb_win` | 10 × **96×64** (0–4 arremesso, 5–9 vitória) | 10 × 64×64 | Sheet 03 |
 | `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | Sheet 04 + hero_v2/inimigos_v2 (jatos) |
 | `enemy_logger` | 4 × **128×84** | 4 × 64×64 | hero_v2/inimigos_v2 (0–1) + Sheet 04 (2–3) |
-| `ally_gef_heli` | 1 × 192×128 | idem | Sheet 05 centro |
+| `ally_gef_heli` | 1 × 192×128 | idem | hero_v2/heli_gef |
 | `slug_boat` / `slug_quad` | 2 × 128×80 | idem | Sheet 05 topo (ainda não usados) |
-| `boss_mega_draga` | 2 × **440×194** (normal, avariada) | 2 × 320×220 | Sheet 05 inferior |
-| `wildlife_cages` | 8 × 64×64 (preso/solto: arara, onça, macaco, peixe-boi) | idem | Sheet 06 esquerda |
-| `powerups_hrf` | 6 × 32×32 (H, R, F, medkit, açaí, abacaxi) | idem | Sheet 06 direita |
-| `fx_explosion` | 10 × 64×64 | idem | Sheet 06 inferior direita |
+| `boss_mega_draga` | 2 × **440×230** (normal, avariada) | 2 × 320×220 | hero_v2/mega_draga |
+| `wildlife_cages` | 8 × 64×64 (preso/solto: arara, onça, macaco, peixe-boi) | idem | hero_v2/itens_hd |
+| `powerups_hrf` | 6 × 32×32 (H, R, F, medkit, açaí, abacaxi) | idem | hero_v2/itens_hd |
+| `fx_explosion` | 10 × 64×64 (clarão → fogo → fumaça que some) | idem | hero_v2/itens_hd (4 fases em 10 quadros) |
 | `fx_muzzle`, `proj_bomb`, `hazard_hg_bucket` | 16, 14, 24 px | idem | Sheets 03/06 |
-| `ground_mud`, `water`, `plat_wood`, `plat_raft`, `bg_sky` | texturas | idem | Sheet 07 |
-| `boss_baron` | 2 × 96×84 (normal, enfurecido) | genérico | Sheet 01 (para Missões 1 e 4) |
+| `ground_mud`, `water`, `plat_wood`, `bg_sky` | texturas | idem | Sheet 07 |
+| `boss_baron` | 2 × 96×84 (normal, enfurecido) | genérico | hero_v2/barao_normal + barao_furioso (Missões 1 e 4) |
 | `ally_gef_agent` | 2 × 96×64 | genérico | inimigos_v2 + Sheet 04 |
 | `prop_hg_barrels` (2), `prop_logs`, `prop_sandbags` | 32×40, 64×40, 56×40 | genérico | Sheet 06 (tambores explodem em cadeia na demo) |
-| `bg_m1`, `bg_m2`, `bg_m4`, `bg_restored` | cenários | genérico | Sheets 07/08 (`bg_restored` = cartão do rio restaurado na vitória) |
+| `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta, igapó destruído com céu em névoa, rio restaurado = cartão da vitória) |
+| `bg_m4` | cenário | genérico | Sheet 08 (Balsa-Fortaleza) |
+| `plat_raft` | 128×48 (balsa de toras, deck a ~20% do topo) | 128×24 | hero_v2/cenarios_hd |
 
 Keys de `KEYS` sem desenho procedural próprio recebem um bloco genérico com o número certo de quadros (fallback em `generatePlaceholders`).
 
