@@ -1,0 +1,10 @@
+export const GAME_W = 800;
+export const GAME_H = 450;
+export const GRAVITY_Y = 900;
+export const GROUND_Y = 410;          // topo do chão (pés dos personagens)
+export const LEVEL_W = 4200;          // largura da fase demonstrativa
+export const BOSS_LOCK_X = 3400;      // scroll da câmera travado na arena do chefe
+export const BOSS_TRIGGER_X = 3450;   // jogador passa daqui -> trava câmera e ativa a Mega Draga
+export const PLAYER_LIVES = 3;
+export const PLAYER_BOMBS = 10;
+export const DEPTH = { bg: 0, world: 10, enemies: 20, player: 30, shots: 40, water: 45, fx: 50 };

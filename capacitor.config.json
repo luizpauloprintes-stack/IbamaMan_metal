@@ -1,0 +1,11 @@
+{
+  "appId": "com.luizpaulo.ibamaman.garimposlug",
+  "appName": "IbamaMan: Garimpo Slug",
+  "webDir": "dist",
+  "backgroundColor": "#000000",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
