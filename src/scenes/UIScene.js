@@ -54,6 +54,13 @@ export default class UIScene extends Phaser.Scene {
     this.bossFill = this.add.rectangle(-150, 6, 300, 10, 0xd02020).setOrigin(0, 0.5);
     this.bossBar.add([bg, this.bossFill, label]);
 
+    // cartão final: o rio restaurado depois do embargo
+    this.restored = this.add.container(GAME_W / 2, 338).setVisible(false).setAlpha(0);
+    const img = this.add.image(0, 0, 'bg_restored');
+    img.setScale(400 / img.width);
+    this.restored.add([this.add.rectangle(0, 0, 408, img.displayHeight + 8, 0x141812).setStrokeStyle(2, 0xffd23f), img,
+      this.add.text(0, img.displayHeight / 2 + 14, 'O RIO VOLTOU A RESPIRAR', { ...TXT, fontSize: '13px', color: '#9cff57', strokeThickness: 3 }).setOrigin(0.5)]);
+
     this.bannerText = this.add.text(GAME_W / 2, 170, '', { ...TXT, fontSize: '34px', color: '#ffd23f', align: 'center', strokeThickness: 6 }).setOrigin(0.5);
     this.bannerSub = this.add.text(GAME_W / 2, 228, '', { ...TXT, fontSize: '15px', color: '#ffffff', align: 'center' }).setOrigin(0.5);
 
@@ -174,6 +181,13 @@ export default class UIScene extends Phaser.Scene {
 
     this.bossBar.setVisible(!!h.boss.visible);
     if (h.boss.visible) this.bossFill.width = Math.max(0, 300 * (h.boss.hp / h.boss.max));
+
+    if (h.restored && !this.restored.visible) {
+      this.restored.setVisible(true);
+      this.tweens.add({ targets: this.restored, alpha: 1, y: 330, duration: 700 });
+    } else if (!h.restored && this.restored.visible) {
+      this.restored.setVisible(false).setAlpha(0).setY(338);
+    }
 
     if (h.banner) {
       this.bannerText.setText(h.banner.text).setColor(h.banner.color).setVisible(true);

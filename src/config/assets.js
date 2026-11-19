@@ -49,6 +49,16 @@ export const KEYS = {
   ground_mud: { frames: 1, w: 64, h: 64 },
   water: { frames: 1, w: 64, h: 52 },
   bg_sky: { frames: 1, w: 800, h: 450 },
+  // extras (arte real em public/assets/sprites; placeholders genéricos se faltarem)
+  boss_baron: { frames: 2, w: 96, h: 84 },       // Barão do Garimpo: normal, enfurecido (Missões 1 e 4)
+  ally_gef_agent: { frames: 2, w: 96, h: 64 },   // agente GEF: atirando, atingido
+  prop_hg_barrels: { frames: 2, w: 32, h: 40 },  // tambores de Hg verde/azul (explodem)
+  prop_logs: { frames: 1, w: 64, h: 40 },
+  prop_sandbags: { frames: 1, w: 56, h: 40 },
+  bg_m1: { frames: 1, w: 800, h: 450 },
+  bg_m2: { frames: 1, w: 800, h: 450 },
+  bg_m4: { frames: 1, w: 800, h: 450 },
+  bg_restored: { frames: 1, w: 512, h: 135 },
   bg_forest: { frames: 1, w: 800, h: 180 },
   bg_river: { frames: 1, w: 800, h: 90 }
 };

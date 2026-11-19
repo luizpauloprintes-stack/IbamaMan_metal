@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y } from '../config/constants.js';
-import { WEAPONS } from '../config/weapons.js';
+import { WEAPONS, HG_BARREL } from '../config/weapons.js';
 import { DEMO_MISSION } from '../config/missions.js';
 import { FULL_BACKGROUND, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
@@ -24,6 +24,9 @@ const LEVEL = {
   // caixas de suprimentos: frame de powerups_hrf (0=H, 1=R, 2=F)
   supplies: [[470, 280, 0], [1530, 210, 1], [2570, 210, 2], [3160, 280, 0]],
   cages: [[1120, GROUND_Y, 0], [1600, GROUND_Y, 1], [2420, GROUND_Y, 2], [2920, GROUND_Y, 3]],
+  // tambores de Hg explosivos [x, cor 0=verde 1=azul] e cobertura decorativa
+  barrels: [[600, 0], [1240, 1], [1270, 0], [2200, 1], [2460, 0], [3260, 1]],
+  decor: [['prop_sandbags', 560], ['prop_logs', 1180], ['prop_sandbags', 2280], ['prop_logs', 3080]],
   miners: [[650, GROUND_Y], [1310, 300], [1480, GROUND_Y], [2350, GROUND_Y], [2570, 230], [3220, GROUND_Y]],
   waves: [
     { at: 350, n: 2, side: 'right' }, { at: 1050, n: 3, side: 'right' }, { at: 1650, n: 2, side: 'both' },
@@ -43,6 +46,7 @@ export default class GameScene extends Phaser.Scene {
     this.bossTriggered = false;
     this.ended = false;
     this.canRestart = false;
+    this.showRestored = false;
     this.gameOverAt = 0;
     this.waveIndex = 0;
     this.heliDone = false;
@@ -126,12 +130,15 @@ export default class GameScene extends Phaser.Scene {
     this.enemyShots = this.physics.add.group();
     this.buckets = this.physics.add.group();
     this.pickups = this.physics.add.group();
+    this.barrels = this.physics.add.group({ allowGravity: false, immovable: true });
   }
 
   populateLevel() {
     LEVEL.supplies.forEach(([x, y, f]) => this.spawnPickup(x, y, f, false));
     LEVEL.cages.forEach(([x, y, a]) => new Cage(this, x, y, a));
     LEVEL.miners.forEach(([x, y]) => new Miner(this, x, y - 2));
+    LEVEL.decor.forEach(([key, x]) => this.add.image(x, GROUND_Y + 2, key).setOrigin(0.5, 1).setScale(ts(key)).setDepth(DEPTH.world + 1));
+    LEVEL.barrels.forEach(([x, f]) => this.spawnBarrel(x, f));
   }
 
   createColliders() {
@@ -152,7 +159,7 @@ export default class GameScene extends Phaser.Scene {
       m.destroy();
     });
 
-    const targets = [this.enemies, this.cages, this.buckets];
+    const targets = [this.enemies, this.cages, this.buckets, this.barrels];
     P.add.overlap(this.playerShots, targets, (a, b) => this.onShotHit(a, b));
     P.add.overlap(this.bombs, targets, (a, b) => this.detonate(a.isShot ? a : b));
 
@@ -282,6 +289,30 @@ export default class GameScene extends Phaser.Scene {
     return b;
   }
 
+  // Tambor de mercúrio: alvo que explode ao ser destruído (reação em cadeia com tambores vizinhos)
+  spawnBarrel(x, frame) {
+    const b = this.barrels.create(x, GROUND_Y + 2, 'prop_hg_barrels', frame);
+    b.setOrigin(0.5, 1).setScale(ts('prop_hg_barrels')).setDepth(DEPTH.world + 2);
+    setBodyLogical(b, 26, 38, 3, 2);
+    b.hp = HG_BARREL.hp;
+    b.isTarget = true;
+    b.takeDamage = (d) => {
+      if (!b.isTarget) return;
+      b.hp -= d;
+      b.setTintFill(0xffffff);
+      this.time.delayedCall(60, () => b.active && b.clearTint());
+      if (b.hp > 0) return;
+      b.isTarget = false;
+      this.addScore(HG_BARREL.score, b.x, b.y - 50, 'TAMBOR DE Hg! +100');
+      const { x: bx, y: by } = b; const h = b.displayHeight;
+      b.destroy();
+      this.fx.debris(bx, by - h / 2, DEBRIS.metal, 8);
+      this.fx.debris(bx, by - h / 2, DEBRIS.hg, 6);
+      this.time.delayedCall(90, () => this.explodeAt(bx, by - h / 2, HG_BARREL.radius, HG_BARREL.damage));
+    };
+    return b;
+  }
+
   callHeli() {
     this.showBanner('APOIO AÉREO GEF!', 1800, '#7dff7d', '');
     const v = this.cameras.main.worldView;
@@ -356,6 +387,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.celebrate();
     Sfx.victory();
     this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', '');
+    this.time.delayedCall(1800, () => { this.showRestored = true; });
     this.time.delayedCall(4000, () => {
       this.canRestart = true;
       this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', 'Toque em FIRE para jogar de novo');
@@ -397,7 +429,7 @@ export default class GameScene extends Phaser.Scene {
   explodeAt(x, y, radius, damage) {
     this.spawnExplosion(x, y, radius / 40, radius >= 80);
     this.cameras.main.shake(120, 0.006);
-    const all = [...this.enemies.getChildren(), ...this.cages.getChildren(), ...this.buckets.getChildren()];
+    const all = [...this.enemies.getChildren(), ...this.cages.getChildren(), ...this.buckets.getChildren(), ...this.barrels.getChildren()];
     if (this.boss) all.push(this.boss);
     all.forEach((t) => {
       if (!t.active || !t.isTarget) return;
@@ -476,6 +508,7 @@ export default class GameScene extends Phaser.Scene {
       lives: p.lives,
       bombs: p.bombs,
       boss: this.bossState,
+      restored: this.showRestored,
       banner
     };
   }

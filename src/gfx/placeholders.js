@@ -444,4 +444,12 @@ export function generatePlaceholders(scene) {
   generateVehicles(scene);
   generateBoss(scene);
   generateWorld(scene);
+  // fallback: qualquer key de KEYS ainda sem textura vira um bloco colorido com os quadros certos
+  Object.entries(KEYS).forEach(([key, k]) => {
+    if (scene.textures.exists(key)) return;
+    makeSheet(scene, key, k.frames, (g, i, ox, oy, w, h) => {
+      g.fillStyle(0x6a5a3a, 1); g.fillRect(ox + 2, 2, w - 4, h - 4);
+      g.lineStyle(2, 0x141812, 1); g.strokeRect(ox + 2, 2, w - 4, h - 4);
+    });
+  });
 }

@@ -75,12 +75,12 @@ tools/source_sheets/       as 8 folhas de arte originais
 
 ### Fase demo (Missão 3) — `GameScene`
 - Rio raso (o jogador vadeia), barrancos de lama, plataformas de madeira (one-way) e uma balsa móvel.
-- Caixas de suprimentos H/R/F, 4 gaiolas (arara, onça, macaco, peixe-boi), ondas de garimpeiros e apoio aéreo do helicóptero GEF.
+- Caixas de suprimentos H/R/F, 4 gaiolas (arara, onça, macaco, peixe-boi), tambores de Hg que explodem em cadeia (`HG_BARREL`), sacos de areia/toras de cenário, ondas de garimpeiros e apoio aéreo do helicóptero GEF.
 - Em `BOSS_TRIGGER_X` a câmera trava (`BOSS_LOCK_X`) e entra a **Mega Draga**:
   - Dano de tiros/bombas, pisca branco (`setTintFill(0xffffff)` 80 ms), barra vermelha na `UIScene`.
   - Estado 1 (HP > 500): jatos de rejeito em parábola + baldes de mercúrio rolantes.
   - Estado 2 (HP ≤ 500): frame avariado + tinta avermelhada, cadência maior, fumaça/explosões contínuas.
-  - Derrota: 8 explosões a cada 250 ms, limpa inimigos, banner "ÁREA EMBARGADA! MISSION COMPLETE!", fanfarra sintetizada.
+  - Derrota: 8 explosões a cada 250 ms, limpa inimigos, banner "ÁREA EMBARGADA! MISSION COMPLETE!", fanfarra sintetizada e cartão do rio restaurado (`bg_restored`).
 
 ## Armas (`src/config/weapons.js`)
 
@@ -96,7 +96,7 @@ Com `ammo <= 0` a arma volta para `PISTOL`.
 
 ## Sprites (arte real + placeholders)
 
-A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria).
+A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria), e das artes em alta resolução de `tools/source_sheets/hero_v2/` (IbamaMan correndo, atirando parado, em pé, agachado e pulando; garimpeiro com jato, madeireiro e agente GEF), que têm prioridade sobre as folhas originais.
 `tools/build_sheets.py` remove o fundo branco e o halo claro das bordas, recorta cada quadro em **2x** (`RES=2`), desenha o contorno escuro de 1px lógico (#141812, estilo Metal Slug; não em explosões), alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
 
 ```bash
@@ -110,11 +110,12 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 
 | Key | Sheet real (quadros × px) | Placeholder | Origem |
 |---|---|---|---|
-| `player_run` / `player_shoot` | 5 × 64×64 | 5 × 64×64 | Sheet 02 linha 1 (tiro em corrida + clarão procedural `fx_muzzle`) |
-| `player_pose` | 4 × 64×64 (parado, agachado, pulo, dano) | idem | Sheets 02/03 |
-| `player_bomb_win` | 10 × 64×64 (0–4 arremesso, 5–9 vitória) | idem | Sheet 03 |
-| `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | Sheet 04 linha 1 |
-| `enemy_logger` | 4 × **128×64** | 4 × 64×64 | Sheet 04 linha 2 |
+| `player_run` | 5 × **96×64** | 5 × 64×64 | hero_v2/hero_corrida (tiro correndo usa clarão procedural `fx_muzzle`) |
+| `player_shoot` | 5 × **96×64** (tiro parado, clarão e cápsulas na arte) | 5 × 64×64 | hero_v2/hero_tiro |
+| `player_pose` | 4 × **96×64** (parado, agachado, pulo, dano) | 4 × 64×64 | hero_v2 (em_pe, agachado, parado→pulo) |
+| `player_bomb_win` | 10 × **96×64** (0–4 arremesso, 5–9 vitória) | 10 × 64×64 | Sheet 03 |
+| `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | Sheet 04 + hero_v2/inimigos_v2 (jatos) |
+| `enemy_logger` | 4 × **128×84** | 4 × 64×64 | hero_v2/inimigos_v2 (0–1) + Sheet 04 (2–3) |
 | `ally_gef_heli` | 1 × 192×128 | idem | Sheet 05 centro |
 | `slug_boat` / `slug_quad` | 2 × 128×80 | idem | Sheet 05 topo (ainda não usados) |
 | `boss_mega_draga` | 2 × **440×194** (normal, avariada) | 2 × 320×220 | Sheet 05 inferior |
@@ -123,8 +124,14 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `fx_explosion` | 10 × 64×64 | idem | Sheet 06 inferior direita |
 | `fx_muzzle`, `proj_bomb`, `hazard_hg_bucket` | 16, 14, 24 px | idem | Sheets 03/06 |
 | `ground_mud`, `water`, `plat_wood`, `plat_raft`, `bg_sky` | texturas | idem | Sheet 07 |
+| `boss_baron` | 2 × 96×84 (normal, enfurecido) | genérico | Sheet 01 (para Missões 1 e 4) |
+| `ally_gef_agent` | 2 × 96×64 | genérico | inimigos_v2 + Sheet 04 |
+| `prop_hg_barrels` (2), `prop_logs`, `prop_sandbags` | 32×40, 64×40, 56×40 | genérico | Sheet 06 (tambores explodem em cadeia na demo) |
+| `bg_m1`, `bg_m2`, `bg_m4`, `bg_restored` | cenários | genérico | Sheets 07/08 (`bg_restored` = cartão do rio restaurado na vitória) |
 
-Corpos físicos que dependem do tamanho do quadro são calculados a partir de `displayWidth/displayHeight` (Miner, MegaDraga), então trocar placeholder ↔ arte real não exige mudar código. Se mudar o tamanho de quadro do jogador (64×64), ajuste `standBody/crouchBody` em `Player.js`.
+Keys de `KEYS` sem desenho procedural próprio recebem um bloco genérico com o número certo de quadros (fallback em `generatePlaceholders`).
+
+Corpos físicos que dependem do tamanho do quadro são calculados a partir de `displayWidth/displayHeight` (Miner, MegaDraga), então trocar placeholder ↔ arte real não exige mudar código. O corpo do jogador também é centrado pelos pés a partir de `displayWidth` (`standBody/crouchBody`), mas **todas as sheets do jogador precisam ter o mesmo tamanho de quadro**.
 
 ## Regras de código
 - JavaScript ES modules, sem TypeScript; uma classe por arquivo em `src/objects/` e `src/scenes/`.

@@ -2,28 +2,28 @@
  {
   "key": "player_run",
   "file": "player_run.png",
-  "frameWidth": 128,
+  "frameWidth": 192,
   "frameHeight": 128,
   "res": 2
  },
  {
   "key": "player_shoot",
   "file": "player_shoot.png",
-  "frameWidth": 128,
+  "frameWidth": 192,
   "frameHeight": 128,
   "res": 2
  },
  {
   "key": "player_pose",
   "file": "player_pose.png",
-  "frameWidth": 128,
+  "frameWidth": 192,
   "frameHeight": 128,
   "res": 2
  },
  {
   "key": "player_bomb_win",
   "file": "player_bomb_win.png",
-  "frameWidth": 128,
+  "frameWidth": 192,
   "frameHeight": 128,
   "res": 2
  },
@@ -38,7 +38,7 @@
   "key": "enemy_logger",
   "file": "enemy_logger.png",
   "frameWidth": 256,
-  "frameHeight": 128,
+  "frameHeight": 168,
   "res": 2
  },
  {
@@ -112,6 +112,41 @@
   "res": 2
  },
  {
+  "key": "boss_baron",
+  "file": "boss_baron.png",
+  "frameWidth": 192,
+  "frameHeight": 168,
+  "res": 2
+ },
+ {
+  "key": "ally_gef_agent",
+  "file": "ally_gef_agent.png",
+  "frameWidth": 192,
+  "frameHeight": 128,
+  "res": 2
+ },
+ {
+  "key": "prop_hg_barrels",
+  "file": "prop_hg_barrels.png",
+  "frameWidth": 64,
+  "frameHeight": 80,
+  "res": 2
+ },
+ {
+  "key": "prop_logs",
+  "file": "prop_logs.png",
+  "frameWidth": 128,
+  "frameHeight": 80,
+  "res": 2
+ },
+ {
+  "key": "prop_sandbags",
+  "file": "prop_sandbags.png",
+  "frameWidth": 112,
+  "frameHeight": 80,
+  "res": 2
+ },
+ {
   "key": "ground_mud",
   "file": "ground_mud.png",
   "res": 2
@@ -134,7 +169,27 @@
  {
   "key": "bg_sky",
   "file": "bg_sky.jpg",
-  "full": true,
+  "res": 2,
+  "full": true
+ },
+ {
+  "key": "bg_m1",
+  "file": "bg_m1.jpg",
+  "res": 2
+ },
+ {
+  "key": "bg_m2",
+  "file": "bg_m2.jpg",
+  "res": 2
+ },
+ {
+  "key": "bg_m4",
+  "file": "bg_m4.jpg",
+  "res": 2
+ },
+ {
+  "key": "bg_restored",
+  "file": "bg_restored.jpg",
   "res": 2
  }
 ]

@@ -7,7 +7,9 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC=os.path.join(ROOT,"tools","source_sheets")
 OUT=sys.argv[1] if len(sys.argv)>1 else os.path.join(ROOT,"public","assets","sprites")
 H={"lineup":"01_elenco_personagens","run":"02_heroi_andar_atirar","throw":"03_heroi_bomba_comemoracao","enemies":"04_inimigos_gef_caixas","vehicles":"05_veiculos_mega_draga","items":"06_animais_powerups_explosoes","bg":"07_cenarios_missoes_1_a_3","m4":"08_cenario_missao_4_vitoria"}
-def _path(k): return os.path.join(SRC,H[k]+".png")
+# IbamaMan v2 (artes em alta resolução enviadas depois das 8 folhas)
+H.update({"hv_kneel":"hero_v2/hero_agachado.png","hv_shoot":"hero_v2/hero_tiro.jpg","hv_run":"hero_v2/hero_corrida.jpg","hv_stand":"hero_v2/hero_parado.jpg","hv_idle":"hero_v2/hero_em_pe.png","ev2":"hero_v2/inimigos_v2.jpg"})
+def _path(k): return os.path.join(SRC,H[k] if H[k].endswith((".jpg",".png")) else H[k]+".png")
 cache={}
 def rgba(key, thr=228):
     if key in cache: return cache[key]
@@ -30,6 +32,9 @@ def crop(key,box,keep="main",erase=()):
     for (a,b,cc,d) in erase: c[b-y0:d-y0, a-x0:cc-x0, 3]=0
     a=c[:,:,3]>0
     lab,n=ndimage.label(a)
+    if n>0 and keep=="only":   # somente a maior peça (descarta restos de figuras vizinhas)
+        sizes=ndimage.sum(a,lab,range(1,n+1))
+        c[:,:,3]=np.where(lab==int(np.argmax(sizes))+1,c[:,:,3],0)
     if n>0 and keep=="main":
         sizes=ndimage.sum(a,lab,range(1,n+1)); main=int(np.argmax(sizes))+1
         km=lab==main; objs=ndimage.find_objects(lab); h,w=a.shape
@@ -113,33 +118,36 @@ def sheet(key,FW,FH,frames):
     cv2.imwrite(f"{OUT}/{key}.png",S)
     manifest.append({"key":key,"file":f"{key}.png","frameWidth":FW,"frameHeight":FH,"res":RES})
 
-R=62/395.; T=62/400.; V=62/465.
-run=[(10,236),(236,424),(424,612),(608,800),(796,1016)]
-sheet("player_run",64,64,[dict(src="run",box=(a,112,b,512),scale=R) for a,b in run])
-sheet("player_shoot",64,64,[dict(src="run",box=(a,112,b,512),scale=R) for a,b in run])
-idle=dict(src="run",box=(10,540,252,996),scale=62/455.,erase=[(222,860,252,996)])
-sheet("player_pose",64,64,[idle,
-    dict(src="throw",box=(38,170,226,512),scale=T),
-    dict(src="throw",box=(470,108,690,482),scale=T),
+# ---- IbamaMan (arte v2): quadros 96x64 lógicos para caber o clarão do tiro ----
+PW=96
+RUNV=[(23,418),(613,951),(1088,1459),(1671,2012),(2218,2576)]
+SHOTV=[(84,600),(631,1140),(1152,1660),(1669,2160),(2144,2576)]
+sheet("player_run",PW,64,[dict(src="hv_run",box=(a,8,b,632),scale=62/614.) for a,b in RUNV])
+sheet("player_shoot",PW,64,[dict(src="hv_shoot",box=(a,14,b,636),scale=62/617.) for a,b in SHOTV])
+idle=dict(src="hv_idle",box=(293,164,749,992),scale=62/819.)
+sheet("player_pose",PW,64,[idle,
+    dict(src="hv_kneel",box=(180,165,880,975),scale=46/801.),
+    dict(src="hv_stand",box=(1218,296,1630,1012),scale=54/714.),
     dict(idle,tint=(60,60,255))])
+T=62/400.; V=62/465.
 win=[(35,226),(226,420),(405,615),(600,800),(790,1016)]
-sheet("player_bomb_win",64,64,[
+sheet("player_bomb_win",PW,64,[
     dict(src="throw",box=(38,170,226,512),scale=T),
     dict(src="throw",box=(195,98,456,484),scale=T),
     dict(src="throw",box=(470,108,690,482),scale=T),
     dict(src="throw",box=(610,145,812,512),scale=T),
     dict(src="throw",box=(812,190,1016,512),scale=T)]+
     [dict(src="throw",box=(a,528,b,996),scale=V) for a,b in win])
-G=60/240.
+G=60/240.; G2=60/545.
 sheet("enemy_miner_hose",128,64,[
-    dict(src="enemies",box=(30,75,216,292),scale=G,anchor=160),
-    dict(src="enemies",box=(237,55,580,292),scale=G,anchor=385),
-    dict(src="enemies",box=(532,68,822,302),scale=G,anchor=670),
-    dict(src="enemies",box=(745,45,988,288),scale=G,anchor=870)])
-L=62/290.
-sheet("enemy_logger",128,64,[
-    dict(src="enemies",box=(62,355,292,642),scale=L,anchor=150),
-    dict(src="enemies",box=(292,340,560,640),scale=L,anchor=370),
+    dict(src="enemies",box=(30,75,216,292),scale=G,anchor=160),                                   # parado (folha 04)
+    dict(src="ev2",box=(935,470,1705,1040),scale=G2,anchor=1290,erase=[(1470,770,1705,1040)],keep="only"),  # jato (v2)
+    dict(src="ev2",box=(1600,470,2078,1045),scale=G2,anchor=1765),                                # jato no chão (v2)
+    dict(src="enemies",box=(745,45,988,288),scale=G,anchor=870)])                                 # fuga (folha 04)
+L=62/290.; L2=62/565.
+sheet("enemy_logger",128,84,[
+    dict(src="ev2",box=(60,455,605,1030),scale=L2),       # motosserra ligada (v2)
+    dict(src="ev2",box=(625,250,1170,1040),scale=L2),     # golpe com a lâmina erguida (v2)
     dict(src="enemies",box=(568,380,768,642),scale=L,anchor=665),
     dict(src="enemies",box=(782,380,1002,646),scale=L,anchor=900)])
 sheet("ally_gef_heli",192,128,[dict(src="vehicles",box=(213,312,868,668),fit=1,mode="center",keep="all")])
@@ -160,6 +168,15 @@ sheet("fx_muzzle",16,16,[dict(src="items",box=(581,563,645,634),fit=1,mode="cent
 sheet("proj_bomb",14,14,[dict(src="throw",box=(672,40,760,132),fit=1,mode="center")])
 sheet("hazard_hg_bucket",24,24,[dict(src="items",box=(45,560,142,702),fit=1,mode="center")])
 
+# ---- extras para as Missões 1, 2 e 4 (e props da demo) ----
+sheet("boss_baron",96,84,[dict(src="lineup",box=(608,532,800,990),scale=80/455.,erase=[(608,820,645,990)]),
+                          dict(src="lineup",box=(790,532,1012,990),scale=80/455.)])   # Barão do Garimpo: normal, enfurecido
+sheet("ally_gef_agent",96,64,[dict(src="ev2",box=(2075,480,2576,1035),scale=62/545.),
+                              dict(src="enemies",box=(276,680,433,962),scale=62/270.,anchor=340)])
+sheet("prop_hg_barrels",32,40,[dict(src="items",box=(45,560,142,702),fit=1),dict(src="items",box=(178,560,302,702),fit=1)])
+sheet("prop_logs",64,40,[dict(src="items",box=(305,575,493,690),fit=1)])
+sheet("prop_sandbags",56,40,[dict(src="items",box=(31,818,180,927),fit=1)])
+
 # texturas opacas de cenário
 bgim=cv2.imread(_path("bg"))
 def save(key,img):
@@ -169,13 +186,25 @@ save("ground_mud",up(bgim[56:121,705:763],64,64))
 save("water",up(bgim[905:957,252:316],64,52))
 save("plat_wood",up(bgim[563:587,172:322],96,16))
 save("plat_raft",up(bgim[928:986,42:240],128,24))
-# fundo da Missão 3 (Rio de Dragas) sem os rótulos "Layer", espelhado para rolagem contínua
-m=np.zeros(bgim.shape[:2],np.uint8)
-for (a,b,c,d) in [(608,712,683,742),(608,802,683,832),(18,976,80,1005)]: m[b:d,a:c]=255
-inp=cv2.inpaint(bgim,m,7,cv2.INPAINT_TELEA)[712:1005,18:683]
-pan=cv2.resize(inp,(round(665*450*RES/293),450*RES),interpolation=cv2.INTER_LANCZOS4)
-pan=cv2.addWeighted(pan,1.5,cv2.GaussianBlur(pan,(0,0),2.0),-0.5,0)   # leve nitidez após ampliar
-cv2.imwrite(f"{OUT}/bg_sky.jpg",np.hstack([pan,pan[:,::-1]]),[cv2.IMWRITE_JPEG_QUALITY,85])
-manifest.append({"key":"bg_sky","file":"bg_sky.jpg","full":True,"res":RES})
+def panel(key, img, box, labels, mirror=True, h=450):
+    """Recorta um painel de cenário, apaga os rótulos 'Layer', amplia (Lanczos + nitidez) e espelha p/ rolagem."""
+    x0,y0,x1,y1=box
+    p=img[y0:y1,x0:x1].copy()            # recorta ANTES do inpaint: a margem branca da folha não vaza
+    m=np.zeros(p.shape[:2],np.uint8)
+    for (a,b,c,d) in labels: m[max(0,b-y0):max(0,d-y0),max(0,a-x0):max(0,c-x0)]=255
+    if m.any(): p=cv2.inpaint(p,m,9,cv2.INPAINT_TELEA)
+    p=cv2.resize(p,(round(p.shape[1]*h*RES/p.shape[0]),h*RES),interpolation=cv2.INTER_LANCZOS4)
+    p=cv2.addWeighted(p,1.5,cv2.GaussianBlur(p,(0,0),2.0),-0.5,0)
+    if mirror: p=np.hstack([p,p[:,::-1]])
+    cv2.imwrite(f"{OUT}/{key}.jpg",p,[cv2.IMWRITE_JPEG_QUALITY,82])
+    manifest.append({"key":key,"file":f"{key}.jpg","res":RES})
+    return manifest[-1]
+m4im=cv2.imread(_path("m4"))
+# fundo da Missão 3 (Rio de Dragas) = bg_sky, cenário completo usado na demo
+panel("bg_sky",bgim,(22,716,679,1001),[(606,712,683,744),(606,800,683,834),(18,972,96,1005)])["full"]=True
+panel("bg_m1",bgim,(22,48,679,328),[(608,44,683,72),(608,133,683,162),(18,300,96,332)])
+panel("bg_m2",bgim,(22,379,679,664),[(608,375,683,402),(608,460,683,490),(18,638,96,668),(608,640,683,668)])
+panel("bg_m4",m4im,(22,48,999,436),[(915,46,1003,78),(915,198,1003,230),(915,352,1003,384)])
+panel("bg_restored",m4im,(18,872,530,1007),[],mirror=False,h=135)
 json.dump(manifest,open(f"{OUT}/manifest.json","w"),indent=1)
 print(len(manifest),"sheets")

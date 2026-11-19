@@ -6,5 +6,8 @@ export const WEAPONS = {
   F: { id: 'F', label: 'F • FLAME', ammo: 80, damage: 35, cooldown: 150, speed: 380, spread: 0, texture: 'proj_flame', kind: 'flame', lifespan: 320 }
 };
 
+// Tambor de mercúrio atingido: explode e pode detonar outros tambores próximos
+export const HG_BARREL = { hp: 20, damage: 50, radius: 64, score: 100 };
+
 // Carga de Demolição (botão BOMB)
 export const BOMB = { damage: 80, radius: 80, vx: 280, vy: -380, texture: 'proj_bomb' };

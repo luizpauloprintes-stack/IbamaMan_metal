@@ -35,8 +35,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   // unidades lógicas (quadro de 64x64)
-  standBody() { setBodyLogical(this, 24, 56, 20, 8); }
-  crouchBody() { setBodyLogical(this, 24, 40, 20, 24); }
+  // corpo centrado nos pés; vale para placeholder 64x64 e sheet real 96x64 (unidades lógicas)
+  standBody() { setBodyLogical(this, 24, 56, (this.displayWidth - 24) / 2, this.displayHeight - 56); }
+  crouchBody() { setBodyLogical(this, 24, 40, (this.displayWidth - 24) / 2, this.displayHeight - 40); }
 
   get onGround() { return this.body.blocked.down || this.body.touching.down; }
   get invulnerable() { return this.scene.time.now < this.invulnUntil || this.locked; }
@@ -85,13 +86,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (time < this.throwingUntil) return;
     if (!this.onGround) { this.anims.stop(); this.setTexture('player_pose', 2); return; }
     if (this.crouching) { this.anims.stop(); this.setTexture('player_pose', 1); return; }
-    if (dir !== 0) { this.anims.play(firing ? 'player-shoot' : 'player-run', true); return; }
+    if (dir !== 0) { this.anims.play('player-run', true); return; }
+    // parado atirando: quadros com clarão e cápsulas desenhados na arte
+    if (firing) { this.anims.play('player-shoot', true); return; }
     this.anims.stop();
-    this.setTexture(firing ? 'player_shoot' : 'player_pose', firing ? 1 : 0);
+    this.setTexture('player_pose', 0);
   }
 
   gunPoint() {
-    return { x: this.x + this.facing * 30, y: this.y - (this.crouching ? 20 : 34) };
+    return { x: this.x + this.facing * 30, y: this.y - (this.crouching ? 26 : 34) };
   }
 
   fire(time) {
@@ -117,9 +120,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
     if (w.kind === 'rocket') shot.radius = w.radius;
 
-    this.muzzle.setPosition(p.x + this.facing * 8, p.y).setFlipX(this.facing < 0).setVisible(true);
-    this.muzzleUntil = time + 50;
-    if (w.kind === 'bullet') this.scene.fx.casing(this.x + this.facing * 6, p.y + 2, this.facing);
+    // parado no chão a arte de tiro já traz clarão e cápsulas; nos outros casos usa os efeitos procedurais
+    const standingShot = this.onGround && !this.crouching && Math.abs(this.body.velocity.x) < 1;
+    if (!standingShot) {
+      this.muzzle.setPosition(p.x + this.facing * 8, p.y).setFlipX(this.facing < 0).setVisible(true);
+      this.muzzleUntil = time + 50;
+      if (w.kind === 'bullet') this.scene.fx.casing(this.x + this.facing * 6, p.y + 2, this.facing);
+    }
     Sfx.shoot(w.id);
 
     if (this.ammo > 0) {
