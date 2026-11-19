@@ -1,62 +1,48 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, GROUND_Y, LEVEL_W, BOSS_LOCK_X, BOSS_TRIGGER_X, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y } from '../config/constants.js';
+import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y } from '../config/constants.js';
 import { WEAPONS, HG_BARREL } from '../config/weapons.js';
-import { DEMO_MISSION } from '../config/missions.js';
-import { FULL_BACKGROUND, ts, setBodyLogical } from '../config/assets.js';
+import { MISSIONS, CAMPAIGN } from '../config/missions.js';
+import { LEVELS, bossLockX, bossTriggerX, BOSS_SCORE } from '../config/levels.js';
+import { FULL_BACKGROUND, REAL_KEYS, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
 import Miner from '../objects/Miner.js';
 import Cage from '../objects/Cage.js';
 import MegaDraga from '../objects/MegaDraga.js';
+import Logger from '../objects/Logger.js';
+import Baron from '../objects/Baron.js';
 import { Sfx } from '../audio/Sfx.js';
 import Particles, { DEBRIS } from '../gfx/Particles.js';
 
-// ----------------------------------------------------------------------------
-// Fase demonstrativa: rio barrento do garimpo (Missão 3 — Garimpo com Dragas)
-// ----------------------------------------------------------------------------
-const LEVEL = {
-  // trechos visuais do chão: 'mud' (barranco) ou 'water' (rio raso, o jogador vadeia)
-  terrain: [
-    ['mud', 0, 700], ['water', 700, 1000], ['mud', 1000, 1700], ['water', 1700, 2100],
-    ['mud', 2100, 2800], ['water', 2800, 3000], ['mud', 3000, 3700], ['water', 3700, LEVEL_W]
-  ],
-  platforms: [[460, 320], [860, 300], [1300, 320], [1520, 250], [2300, 310], [2560, 250], [3150, 320]],
-  raft: { x: 1820, y: 335, minX: 1760, maxX: 2060, speed: 60 },
-  // caixas de suprimentos: frame de powerups_hrf (0=H, 1=R, 2=F)
-  supplies: [[470, 280, 0], [1530, 210, 1], [2570, 210, 2], [3160, 280, 0]],
-  cages: [[1120, GROUND_Y, 0], [1600, GROUND_Y, 1], [2420, GROUND_Y, 2], [2920, GROUND_Y, 3]],
-  // tambores de Hg explosivos [x, cor 0=verde 1=azul] e cobertura decorativa
-  barrels: [[600, 0], [1240, 1], [1270, 0], [2200, 1], [2460, 0], [3260, 1]],
-  decor: [['prop_sandbags', 560], ['prop_logs', 1180], ['prop_sandbags', 2280], ['prop_logs', 3080]],
-  miners: [[650, GROUND_Y], [1310, 300], [1480, GROUND_Y], [2350, GROUND_Y], [2570, 230], [3220, GROUND_Y]],
-  waves: [
-    { at: 350, n: 2, side: 'right' }, { at: 1050, n: 3, side: 'right' }, { at: 1650, n: 2, side: 'both' },
-    { at: 2350, n: 3, side: 'right' }, { at: 2850, n: 4, side: 'both' }
-  ],
-  heliAt: 2150
-};
+// Fases montadas a partir de src/config/levels.js (uma por missão jogável da campanha).
 const MAX_ALIVE = 9;
 
 export default class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
 
-  create() {
-    this.score = 0;
+  create(data = {}) {
+    this.missionId = LEVELS[data.mission] ? data.mission : CAMPAIGN[0];
+    this.level = LEVELS[this.missionId];
+    this.mission = MISSIONS.find((m) => m.id === this.missionId);
+    this.lockX = bossLockX(this.level);
+    this.score = data.score || 0;
     this.banner = null;
     this.bossState = { visible: false, hp: 0, max: 1 };
     this.bossTriggered = false;
     this.ended = false;
     this.canRestart = false;
     this.showRestored = false;
+    this.won = false;
     this.gameOverAt = 0;
     this.waveIndex = 0;
     this.heliDone = false;
 
     this.fx = new Particles(this);
-    this.physics.world.setBounds(0, 0, LEVEL_W, GAME_H);
+    const LW = this.level.levelW;
+    this.physics.world.setBounds(0, 0, LW, GAME_H);
     this.physics.world.setBoundsCollision(true, true, true, false);
     const cam = this.cameras.main;
     cam.setZoom(RENDER_ZOOM);
-    cam.setBounds(0, 0, LEVEL_W, GAME_H);
+    cam.setBounds(0, 0, LW, GAME_H);
     this.setViewLeft(0);
 
     this.buildBackground();
@@ -65,19 +51,22 @@ export default class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, 160, GROUND_Y - 10);
     this.player.setCollideWorldBounds(true);
+    if (data.lives) this.player.lives = Math.max(data.lives, PLAYER_LIVES);
 
     this.populateLevel();
     this.createColliders();
 
     if (!this.scene.isActive('UIScene')) this.scene.launch('UIScene');
-    this.showBanner(`MISSÃO ${DEMO_MISSION.id}: ${DEMO_MISSION.title}`, 2600, '#ffd23f', 'Liberte os animais e embargue a Mega Draga!');
+    this.showBanner(`MISSÃO ${this.mission.id}: ${this.mission.title}`, 2600, '#ffd23f', this.level.intro);
   }
 
   // ---------------------------------------------------------------- cenário
   buildBackground() {
-    this.bgSky = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y, GAME_W, GAME_H, 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
-    if (FULL_BACKGROUND) {
-      const t = this.textures.get('bg_sky').getSourceImage();
+    const key = this.level.bg;
+    this.fullBg = key === 'bg_sky' ? FULL_BACKGROUND : REAL_KEYS.has(key);
+    this.bgSky = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y, GAME_W, GAME_H, this.fullBg ? key : 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
+    if (this.fullBg) {
+      const t = this.textures.get(key).getSourceImage();
       this.bgSky.setTileScale(GAME_H / t.height);
       this.bgTileScale = GAME_H / t.height;
       this.bgForest = null; this.bgRiver = null;
@@ -89,7 +78,7 @@ export default class GameScene extends Phaser.Scene {
 
   buildTerrain() {
     this.waterStrips = [];
-    LEVEL.terrain.forEach(([type, x0, x1]) => {
+    this.level.terrain.forEach(([type, x0, x1]) => {
       if (type === 'mud') {
         this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'ground_mud').setOrigin(0).setDepth(DEPTH.world).setTileScale(ts('ground_mud'));
       } else {
@@ -99,17 +88,19 @@ export default class GameScene extends Phaser.Scene {
       }
     });
     // corpo físico contínuo do leito/barranco
-    this.groundBody = this.add.zone(LEVEL_W / 2, GROUND_Y + 20, LEVEL_W, 40);
+    this.groundBody = this.add.zone(this.level.levelW / 2, GROUND_Y + 20, this.level.levelW, 40);
     this.physics.add.existing(this.groundBody, true);
 
     this.platforms = this.physics.add.staticGroup();
-    LEVEL.platforms.forEach(([x, y]) => {
+    this.level.platforms.forEach(([x, y]) => {
       const p = this.platforms.create(x, y, 'plat_wood').setDepth(DEPTH.world + 2).setScale(ts('plat_wood'));
       this.oneWay(p.body);
       p.refreshBody();
     });
 
-    const r = LEVEL.raft;
+    const r = this.level.raft;
+    this.raft = null;
+    if (!r) return;
     this.raft = this.physics.add.image(r.x, r.y, 'plat_raft').setDepth(DEPTH.world + 2).setScale(ts('plat_raft'));
     this.raft.body.setAllowGravity(false).setImmovable(true).setVelocityX(r.speed);
     // superfície da balsa: ~20% do topo do quadro (vale para placeholder e arte HD)
@@ -135,15 +126,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   populateLevel() {
-    LEVEL.supplies.forEach(([x, y, f]) => this.spawnPickup(x, y, f, false));
-    LEVEL.cages.forEach(([x, y, a]) => new Cage(this, x, y, a));
-    LEVEL.miners.forEach(([x, y]) => new Miner(this, x, y - 2));
-    LEVEL.decor.forEach(([key, x]) => this.add.image(x, GROUND_Y + 2, key).setOrigin(0.5, 1).setScale(ts(key)).setDepth(DEPTH.world + 1));
-    LEVEL.barrels.forEach(([x, f]) => this.spawnBarrel(x, f));
+    const L = this.level;
+    L.supplies.forEach(([x, y, f]) => this.spawnPickup(x, y, f, false));
+    L.cages.forEach(([x, y, a]) => new Cage(this, x, y, a));
+    L.enemies.forEach(([type, x, y]) => this.spawnEnemyAt(type, x, y - 2));
+    L.decor.forEach(([key, x]) => this.add.image(x, GROUND_Y + 2, key).setOrigin(0.5, 1).setScale(ts(key)).setDepth(DEPTH.world + 1));
+    L.barrels.forEach(([x, f]) => this.spawnBarrel(x, f));
   }
 
   createColliders() {
-    const solids = [this.groundBody, this.platforms, this.raft];
+    const solids = [this.groundBody, this.platforms, this.raft].filter(Boolean);
+    this.solids = solids;
     const P = this.physics;
     P.add.collider(this.player, solids);
     P.add.collider(this.enemies, solids);
@@ -206,7 +199,7 @@ export default class GameScene extends Phaser.Scene {
   updateCamera() {
     const left = this.viewLeft;
     if (!this.bossTriggered) {
-      const target = Phaser.Math.Clamp(this.player.x - CAMERA_LEAD_X, 0, BOSS_LOCK_X);
+      const target = Phaser.Math.Clamp(this.player.x - CAMERA_LEAD_X, 0, this.lockX);
       if (target > left) this.setViewLeft(Math.min(left + Math.max(2, (target - left) * 0.2), target));
     }
     // estilo arcade: não dá para voltar além da borda esquerda da tela
@@ -214,14 +207,15 @@ export default class GameScene extends Phaser.Scene {
     if (this.player.x < minX && !this.player.dead) { this.player.x = minX; if (this.player.body.velocity.x < 0) this.player.setVelocityX(0); }
 
     const sx = this.viewLeft;
-    if (FULL_BACKGROUND) { this.bgSky.tilePositionX = (sx * 0.3) / this.bgTileScale; return; }
+    if (this.fullBg) { this.bgSky.tilePositionX = (sx * 0.3) / this.bgTileScale; return; }
     this.bgSky.tilePositionX = sx * 0.05;
     this.bgForest.tilePositionX = sx * 0.25;
     this.bgRiver.tilePositionX = sx * 0.5;
   }
 
   updateRaft() {
-    const r = LEVEL.raft;
+    const r = this.level.raft;
+    if (!r) return;
     if (this.raft.x >= r.maxX) this.raft.setVelocityX(-r.speed);
     else if (this.raft.x <= r.minX) this.raft.setVelocityX(r.speed);
   }
@@ -241,10 +235,10 @@ export default class GameScene extends Phaser.Scene {
 
   checkTriggers() {
     const sx = this.viewLeft;
-    const w = LEVEL.waves[this.waveIndex];
+    const w = this.level.waves[this.waveIndex];
     if (w && sx >= w.at) { this.waveIndex += 1; this.spawnWave(w); }
-    if (!this.heliDone && sx >= LEVEL.heliAt) { this.heliDone = true; this.callHeli(); }
-    if (!this.bossTriggered && this.player.x >= BOSS_TRIGGER_X) this.startBoss();
+    if (!this.heliDone && this.level.heliAt && sx >= this.level.heliAt) { this.heliDone = true; this.callHeli(); }
+    if (!this.bossTriggered && this.player.x >= bossTriggerX(this.level)) this.startBoss();
   }
 
   // ---------------------------------------------------------------- inimigos
@@ -254,9 +248,20 @@ export default class GameScene extends Phaser.Scene {
         if (this.ended || this.enemies.countActive(true) >= MAX_ALIVE) return;
         const v = this.cameras.main.worldView;
         const left = w.side === 'left' || (w.side === 'both' && i % 2 === 1);
-        new Miner(this, left ? v.left - 20 : v.right + 20, GROUND_Y - 40);
+        this.spawnEnemyAt(w.type || 'miner', left ? v.left - 20 : v.right + 20, GROUND_Y - 40);
       });
     }
+  }
+
+  spawnEnemyAt(type, x, y) {
+    return type === 'logger' ? new Logger(this, x, y) : new Miner(this, x, y);
+  }
+
+  // inimigo entrando pela borda da tela (usado pelo Barão ao chamar reforços)
+  spawnEnemy(type, side) {
+    if (this.enemies.countActive(true) >= MAX_ALIVE) return null;
+    const v = this.cameras.main.worldView;
+    return this.spawnEnemyAt(type, side === 'left' ? v.left - 20 : v.right + 20, GROUND_Y - 40);
   }
 
   spawnMud(x, y, vx, vy, scale = 1) {
@@ -342,14 +347,21 @@ export default class GameScene extends Phaser.Scene {
   startBoss() {
     this.bossTriggered = true;
     const cam = this.cameras.main;
-    this.tweens.add({ targets: cam, scrollX: BOSS_LOCK_X - VIEW_OFF_X, duration: 900, ease: 'Sine.easeInOut' });
-    this.physics.world.setBounds(BOSS_LOCK_X + SCREEN_LEFT_MARGIN, 0, GAME_W - SCREEN_LEFT_MARGIN, GAME_H);
+    const B = this.level.boss;
+    const lock = this.lockX;
+    this.tweens.add({ targets: cam, scrollX: lock - VIEW_OFF_X, duration: 900, ease: 'Sine.easeInOut' });
+    this.physics.world.setBounds(lock + SCREEN_LEFT_MARGIN, 0, GAME_W - SCREEN_LEFT_MARGIN, GAME_H);
     Sfx.alarm();
-    this.showBanner('ALERTA! MEGA DRAGA', 2200, '#ff4d4d', 'Garimpo ilegal no rio — destrua a draga!');
+    this.showBanner(B.alert, 2200, '#ff4d4d', B.alertSub);
 
-    this.boss = new MegaDraga(this, BOSS_LOCK_X + 640, GROUND_Y + 14);
-    this.boss.x = BOSS_LOCK_X + GAME_W - this.boss.displayWidth / 2 + 10;
-    this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP };
+    if (B.type === 'baron') {
+      this.boss = new Baron(this, lock + GAME_W - 12, GROUND_Y - 2, { left: lock + SCREEN_LEFT_MARGIN, right: lock + GAME_W });
+      this.physics.add.collider(this.boss, this.groundBody);
+    } else {
+      this.boss = new MegaDraga(this, lock + 640, GROUND_Y + 14);
+      this.boss.x = lock + GAME_W - this.boss.displayWidth / 2 + 10;
+    }
+    this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP, name: B.name };
     this.physics.add.overlap(this.playerShots, this.boss, (a, b) => this.onShotHit(a, b));
     this.physics.add.overlap(this.bombs, this.boss, (a, b) => this.detonate(a.isShot ? a : b));
     this.physics.add.overlap(this.player, this.boss, () => {
@@ -367,6 +379,8 @@ export default class GameScene extends Phaser.Scene {
     this.enemyShots.clear(true, true);
     this.buckets.getChildren().slice().forEach((k) => { this.spawnExplosion(k.x, k.y, 0.5, false, true); k.destroy(); });
 
+    if (boss instanceof Baron) { this.defeatBaron(boss); return; }
+
     // 8 explosões sequenciais aleatórias a cada 250ms
     let n = 0;
     this.time.addEvent({
@@ -382,17 +396,49 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  // Barão: a motosserra explode (3x), ele cai de joelhos e é autuado (sem explodir o personagem)
+  defeatBaron(boss) {
+    let n = 0;
+    this.time.addEvent({
+      delay: 300, repeat: 2,
+      callback: () => {
+        n += 1;
+        const p = boss.randomPoint();
+        this.spawnExplosion(p.x, p.y, Phaser.Math.FloatBetween(0.8, 1.1), n === 3);
+        this.fx.debris(p.x, p.y, DEBRIS.metal, 8);
+        this.cameras.main.shake(160, 0.01);
+        if (n === 3) this.finishMission(boss);
+      }
+    });
+  }
+
   finishMission(boss) {
-    this.tweens.add({ targets: boss, y: boss.y + 140, alpha: 0, angle: -6, duration: 1600, onComplete: () => { this.bossState.visible = false; boss.destroy(); } });
-    this.addScore(10000, boss.x - 60, boss.y - 200, 'DRAGA DESTRUÍDA! +10000');
+    const B = this.level.boss;
+    if (boss instanceof Baron) {
+      boss.setFrame(0).setTint(0xb0a090);
+      this.tweens.add({ targets: boss, angle: boss.flipX ? 8 : -8, y: boss.y + 6, duration: 500 });
+      this.popup(boss.x, boss.y - boss.displayHeight - 10, 'AUTUADO!', '#ff4d4d');
+      this.time.delayedCall(2600, () => { this.bossState.visible = false; });
+    } else {
+      this.tweens.add({ targets: boss, y: boss.y + 140, alpha: 0, angle: -6, duration: 1600, onComplete: () => { this.bossState.visible = false; boss.destroy(); } });
+    }
+    this.addScore(BOSS_SCORE, boss.x - 60, boss.y - (boss.displayHeight + 40), B.defeatText);
     this.player.celebrate();
     Sfx.victory();
     this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', '');
     this.time.delayedCall(1800, () => { this.showRestored = true; });
     this.time.delayedCall(4000, () => {
       this.canRestart = true;
-      this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', 'Toque em FIRE para jogar de novo');
+      this.won = true;
+      const next = this.nextMission();
+      const sub = next ? `Toque em FIRE para a Missão ${next}` : 'FIM DA DEMO — toque em FIRE para recomeçar';
+      this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', sub);
     });
+  }
+
+  nextMission() {
+    const i = CAMPAIGN.indexOf(this.missionId);
+    return i >= 0 && i < CAMPAIGN.length - 1 ? CAMPAIGN[i + 1] : null;
   }
 
   // ---------------------------------------------------------------- dano / tiros
@@ -509,12 +555,16 @@ export default class GameScene extends Phaser.Scene {
       lives: p.lives,
       bombs: p.bombs,
       boss: this.bossState,
-      restored: this.showRestored,
+      restored: this.showRestored ? this.level.victory : null,
       banner
     };
   }
 
+  // vitória: próxima missão (mantém pontos e vidas); game over: repete a missão do zero
   restartGame() {
-    this.scene.restart();
+    const next = this.won ? this.nextMission() : null;
+    if (next) this.scene.restart({ mission: next, score: this.score, lives: this.player.lives });
+    else if (this.won) this.scene.restart({ mission: CAMPAIGN[0] });
+    else this.scene.restart({ mission: this.missionId });
   }
 }

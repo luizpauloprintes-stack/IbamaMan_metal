@@ -208,7 +208,7 @@ m4im=cv2.imread(_path("m4"))
 # fundo da Missão 3 (Rio de Dragas) = bg_sky, cenário completo usado na demo
 panel("bg_sky",bgim,(22,716,679,1001),[(606,712,683,744),(606,800,683,834),(18,972,96,1005)])["full"]=True
 cen=cv2.imread(_path("cen2"))
-panel("bg_m1",cen,(70,62,2506,714),[])            # floresta preservada HD (Missão 1)
+panel("bg_m1",cen,(78,68,2498,708),[])            # floresta preservada HD (Missão 1)
 # igapó destruído HD (Missão 2): o céu vazado (branco) vira névoa em degradê
 sw=cen[770:1385,68:1564].copy()
 near=sw.min(axis=2)>228; lab,_=ndimage.label(near)

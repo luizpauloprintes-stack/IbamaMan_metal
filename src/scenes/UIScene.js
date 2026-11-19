@@ -49,17 +49,17 @@ export default class UIScene extends Phaser.Scene {
 
     // barra do chefe
     this.bossBar = this.add.container(GAME_W / 2, 30).setVisible(false);
-    const label = this.add.text(0, -14, 'MEGA DRAGA', { ...TXT, fontSize: '14px', color: '#ff4d4d' }).setOrigin(0.5);
+    this.bossLabel = this.add.text(0, -14, 'MEGA DRAGA', { ...TXT, fontSize: '14px', color: '#ff4d4d' }).setOrigin(0.5);
     const bg = this.add.rectangle(0, 6, 304, 14, 0x000000).setStrokeStyle(2, 0xffffff);
     this.bossFill = this.add.rectangle(-150, 6, 300, 10, 0xd02020).setOrigin(0, 0.5);
-    this.bossBar.add([bg, this.bossFill, label]);
+    this.bossBar.add([bg, this.bossFill, this.bossLabel]);
 
     // cartão final: o rio restaurado depois do embargo
     this.restored = this.add.container(GAME_W / 2, 338).setVisible(false).setAlpha(0);
-    const img = this.add.image(0, 0, 'bg_restored');
-    img.setScale(400 / img.width);
-    this.restored.add([this.add.rectangle(0, 0, 408, img.displayHeight + 8, 0x141812).setStrokeStyle(2, 0xffd23f), img,
-      this.add.text(0, img.displayHeight / 2 + 14, 'O RIO VOLTOU A RESPIRAR', { ...TXT, fontSize: '13px', color: '#9cff57', strokeThickness: 3 }).setOrigin(0.5)]);
+    this.restoredImg = this.add.image(0, 0, 'bg_restored');
+    this.restoredFrame = this.add.rectangle(0, 0, 408, 120, 0x141812).setStrokeStyle(2, 0xffd23f);
+    this.restoredCaption = this.add.text(0, 0, '', { ...TXT, fontSize: '13px', color: '#9cff57', strokeThickness: 3 }).setOrigin(0.5);
+    this.restored.add([this.restoredFrame, this.restoredImg, this.restoredCaption]);
 
     this.bannerText = this.add.text(GAME_W / 2, 170, '', { ...TXT, fontSize: '34px', color: '#ffd23f', align: 'center', strokeThickness: 6 }).setOrigin(0.5);
     this.bannerSub = this.add.text(GAME_W / 2, 228, '', { ...TXT, fontSize: '15px', color: '#ffffff', align: 'center' }).setOrigin(0.5);
@@ -180,9 +180,18 @@ export default class UIScene extends Phaser.Scene {
     this.ammoText.setText(`MUNIÇÃO: ${h.ammo}`);
 
     this.bossBar.setVisible(!!h.boss.visible);
+    if (h.boss.name && this.bossLabel.text !== h.boss.name) this.bossLabel.setText(h.boss.name);
     if (h.boss.visible) this.bossFill.width = Math.max(0, 300 * (h.boss.hp / h.boss.max));
 
     if (h.restored && !this.restored.visible) {
+      // cartão: recorte central de 400x110 do cenário da vitória
+      const img = this.restoredImg.setTexture(h.restored.key);
+      const src = this.textures.get(h.restored.key).getSourceImage();
+      const s = 110 / src.height;
+      const cw = Math.min(src.width, 400 / s);
+      img.setCrop((src.width - cw) / 2, 0, cw, src.height).setScale(s).setX(-((src.width - cw) / 2 + cw / 2 - src.width / 2) * s);
+      this.restoredFrame.setSize(cw * s + 8, 118).setOrigin(0.5);
+      this.restoredCaption.setText(h.restored.caption).setY(70);
       this.restored.setVisible(true);
       this.tweens.add({ targets: this.restored, alpha: 1, y: 330, duration: 700 });
     } else if (!h.restored && this.restored.visible) {

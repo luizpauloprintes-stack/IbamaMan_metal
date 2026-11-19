@@ -6,6 +6,8 @@ import manifest from '../../public/assets/sprites/manifest.json';
 export const SPRITE_MANIFEST = manifest;
 // bg_sky "full" = cenário completo pintado (dispensa as camadas bg_forest/bg_river procedurais)
 export const FULL_BACKGROUND = manifest.some((s) => s.key === 'bg_sky' && s.full);
+/** Keys que têm arte real (vinda do manifest). Cenários reais são desenhados como painel único com parallax. */
+export const REAL_KEYS = new Set(manifest.map((s) => s.key));
 
 // Resolução de cada textura em relação às unidades lógicas (res 2 = desenhada em dobro).
 const RES = Object.fromEntries(manifest.map((s) => [s.key, s.res || 1]));

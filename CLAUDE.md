@@ -26,7 +26,9 @@ src/main.js                Phaser.Game (lógico 800x450, canvas 1600x900), pixel
 src/config/
   constants.js             dimensões, GROUND_Y, LEVEL_W, gatilho/trava do chefe, DEPTH
   weapons.js               tabela de armas PISTOL/H/R/F + Carga de Demolição (BOMB)
-  missions.js              as 4 missões da campanha (só a playable=true tem fase)
+  missions.js              as 4 missões da campanha; CAMPAIGN = ordem das jogáveis (playable=true)
+  levels.js                layout de cada fase jogável (fundo, terreno, plataformas, inimigos, ondas, chefe, cartão de vitória)
+  enemies.js               balanceamento de garimpeiro, madeireiro e Barão
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
@@ -34,11 +36,13 @@ src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsu
 src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
 src/scenes/
   BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações
-  GameScene.js             fase, câmera, colisões, ondas, gaiolas, power-ups, chefe, vitória/game over
+  GameScene.js             monta a fase de levels.js; câmera, colisões, ondas, gaiolas, power-ups, chefe, vitória → próxima missão
   UIScene.js               HUD + direcional flutuante + botões touch e teclado (sobreposta à GameScene)
 src/objects/
   Player.js                movimento, pulo, agachar, armas, munição, bomba, dano/vidas
   Miner.js                 garimpeiro com mangueira (anda até o jogador e lança lama em parábola)
+  Logger.js                madeireiro com motosserra (corpo a corpo, aviso com a lâmina erguida, fumaça do motor)
+  Baron.js                 chefe Barão do Garimpo (investida, baldes de Hg, chama madeireiros; enfurece com 50% de HP)
   Cage.js                  gaiola com animal: quebra com tiro → solta o animal e dropa bônus
   MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg)
 android/                   projeto nativo gerado pelo Capacitor (versionado)
@@ -68,12 +72,22 @@ tools/source_sheets/       as 8 folhas de arte originais
 
 | # | Missão | Cenário | Inimigos | Chefe | Status |
 |---|---|---|---|---|---|
-| 1 | **Desmatamento** | floresta com tratores e pilhas de toras | madeireiro com motosserra, garimpeiro | Barão do Garimpo (motosserra) | planejada |
+| 1 | **Desmatamento** | floresta (bg_m1) com toras e um igarapé | madeireiros com motosserra, garimpeiros | **Barão do Garimpo** | **jogável** |
 | 2 | **Garimpo Amador** | córrego barrento, acampamentos, tambores de Hg | garimpeiros com mangueira | — (onda final) | planejada |
-| 3 | **Garimpo com Dragas** | rio barrento com balsas e dragas | garimpeiros com mangueira | **Mega Draga** | **jogável (demo)** |
+| 3 | **Garimpo com Dragas** | rio barrento com balsas e dragas | garimpeiros com mangueira | **Mega Draga** | **jogável** |
 | 4 | **Chefão do Garimpo** | Balsa-Fortaleza | garimpeiros, madeireiros | Barão do Garimpo + Balsa-Fortaleza | planejada |
 
-### Fase demo (Missão 3) — `GameScene`
+### Campanha e fluxo
+- A `GameScene` recebe `{ mission, score, lives }` em `scene.restart(data)` e monta a fase de `LEVELS[mission]`.
+- Vitória → "Toque em FIRE para a Missão N" (mantém pontos e vidas). Depois da última missão jogável: "FIM DA DEMO" e volta à primeira. Game over → repete a missão atual do zero.
+- Para criar uma missão nova: adicione `LEVELS[id]` em `levels.js`, marque `playable: true` em `missions.js` e, se o chefe for novo, crie a classe com a mesma interface (`hp`, `maxHP`, `isTarget`, `defeated`, `enter()`, `takeDamage()`, `randomPoint()`, chamando `scene.onBossDefeated(this)`).
+
+### Missão 1 — Desmatamento
+- Floresta HD com parallax, um igarapé raso, plataformas, toras/sacos de areia, 3 gaiolas, caixa F logo no início (boa contra motosserra).
+- **Madeireiro** (`Logger`): anda até o jogador, ergue a lâmina (aviso de 260 ms) e golpeia de perto.
+- **Barão do Garimpo** (`Baron`, 700 HP): ciclo investida com a motosserra (pisca vermelho antes) → baldes de Hg → investida → chama madeireiros. Com 50% fica enfurecido (rosto vermelho), mais rápido e com mais reforços. Derrota: a motosserra explode, ele cai de joelhos — **"BARÃO AUTUADO!"** — e o cartão "A FLORESTA FICA DE PÉ".
+
+### Missão 3 — Garimpo com Dragas
 - Rio raso (o jogador vadeia), barrancos de lama, plataformas de madeira (one-way) e uma balsa móvel.
 - Caixas de suprimentos H/R/F, 4 gaiolas (arara, onça, macaco, peixe-boi), tambores de Hg que explodem em cadeia (`HG_BARREL`), sacos de areia/toras de cenário, ondas de garimpeiros e apoio aéreo do helicóptero GEF.
 - Em `BOSS_TRIGGER_X` a câmera trava (`BOSS_LOCK_X`) e entra a **Mega Draga**:
@@ -144,5 +158,5 @@ Corpos físicos que dependem do tamanho do quadro são calculados a partir de `d
 - Alvos danificáveis expõem `isTarget` e `takeDamage(dmg)`.
 - Texto da interface em português (pt-BR); nomes de código em inglês/português curto.
 - Sem áudio em arquivo: novos sons vão em `src/audio/Sfx.js`.
-- Antes de commitar: `npm run build` sem erros e uma partida de teste (chegar ao chefe e vencê-lo).
+- Antes de commitar: `npm run build` sem erros e uma partida de teste de cada missão jogável (chegar ao chefe, vencê-lo e passar para a próxima).
 - Para depurar no navegador: `window.__IBAMAMAN__.scene.getScene('GameScene')`.
