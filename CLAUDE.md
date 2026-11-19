@@ -28,7 +28,7 @@ src/config/
   weapons.js               tabela de armas PISTOL/H/R/F + Carga de Demolição (BOMB)
   missions.js              as 4 missões da campanha; CAMPAIGN = ordem das jogáveis (playable=true)
   levels.js                layout de cada fase jogável (fundo, terreno, plataformas, inimigos, ondas, chefe, cartão de vitória)
-  enemies.js               balanceamento de garimpeiro, madeireiro e Barão
+  enemies.js               balanceamento de garimpeiro, madeireiro, Barão e acampamento (CAMP)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
@@ -43,7 +43,10 @@ src/objects/
   Miner.js                 garimpeiro com mangueira (anda até o jogador e lança lama em parábola)
   Logger.js                madeireiro com motosserra (corpo a corpo, aviso com a lâmina erguida, fumaça do motor)
   Baron.js                 chefe Barão do Garimpo (investida, baldes de Hg, chama madeireiros; enfurece com 50% de HP)
-  Cage.js                  gaiola com animal: quebra com tiro → solta o animal e dropa bônus
+  Cage.js                  gaiola com animal: quebra com tiro → solta o animal (FreedAnimal) e dropa bônus
+  FreedAnimal.js           animal libertado com movimento procedural (arara voa batendo asas, onça galopa,
+                           macaco pula com cambalhota, peixe-boi mergulha no rio ou rasteja em terra)
+  Camp.js                  "chefe" da Missão 2: acampamento defendido por ondas; HP = garimpeiros restantes
   MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg)
 android/                   projeto nativo gerado pelo Capacitor (versionado)
 public/assets/sprites/     spritesheets gerados + manifest.json
@@ -73,7 +76,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 | # | Missão | Cenário | Inimigos | Chefe | Status |
 |---|---|---|---|---|---|
 | 1 | **Desmatamento** | floresta (bg_m1) com toras e um igarapé | madeireiros com motosserra, garimpeiros | **Barão do Garimpo** | **jogável** |
-| 2 | **Garimpo Amador** | córrego barrento, acampamentos, tambores de Hg | garimpeiros com mangueira | — (onda final) | planejada |
+| 2 | **Garimpo Amador** | igapó destruído (bg_m2), muitos tambores de Hg | garimpeiros com mangueira | **Acampamento** (3 ondas) | **jogável** |
 | 3 | **Garimpo com Dragas** | rio barrento com balsas e dragas | garimpeiros com mangueira | **Mega Draga** | **jogável** |
 | 4 | **Chefão do Garimpo** | Balsa-Fortaleza | garimpeiros, madeireiros | Barão do Garimpo + Balsa-Fortaleza | planejada |
 
@@ -86,6 +89,14 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Floresta HD com parallax, um igarapé raso, plataformas, toras/sacos de areia, 3 gaiolas, caixa F logo no início (boa contra motosserra).
 - **Madeireiro** (`Logger`): anda até o jogador, ergue a lâmina (aviso de 260 ms) e golpeia de perto.
 - **Barão do Garimpo** (`Baron`, 700 HP): ciclo investida com a motosserra (pisca vermelho antes) → baldes de Hg → investida → chama madeireiros. Com 50% fica enfurecido (rosto vermelho), mais rápido e com mais reforços. Derrota: a motosserra explode, ele cai de joelhos — **"BARÃO AUTUADO!"** — e o cartão "A FLORESTA FICA DE PÉ".
+
+### Missão 2 — Garimpo Amador
+- Igapó destruído HD, trechos de igarapé raso, balsa móvel, 3 gaiolas (macaco, arara, peixe-boi), tambores de Hg em grupos (explodem em cadeia).
+- **Acampamento do garimpo** (`Camp`): a câmera trava e vêm 3 ondas de garimpeiros (4, 5 e 6) pelos dois lados; a barra "GARIMPEIROS" mostra quantos faltam. Ao zerar, os tambores da arena explodem em sequência e o acampamento é desmontado.
+
+### Inimigos e bordas da fase
+- Inimigos que entram pela borda nascem em `edgeX(side)`, sempre **sobre o chão** (`levelW` limita). Quem cair fora do mapa é removido e conta como baixa (`onEnemyKilled`), para nunca travar a contagem do acampamento.
+- `Miner.die()`/`Logger.die()` chamam `scene.onEnemyKilled(this)`; chefes podem implementar `onEnemyKilled`.
 
 ### Missão 3 — Garimpo com Dragas
 - Rio raso (o jogador vadeia), barrancos de lama, plataformas de madeira (one-way) e uma balsa móvel.
@@ -141,7 +152,7 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `boss_baron` | 2 × 96×84 (normal, enfurecido) | genérico | hero_v2/barao_normal + barao_furioso (Missões 1 e 4) |
 | `ally_gef_agent` | 2 × 96×64 | genérico | inimigos_v2 + Sheet 04 |
 | `prop_hg_barrels` (2), `prop_logs`, `prop_sandbags` | 32×40, 64×40, 56×40 | genérico | Sheet 06 (tambores explodem em cadeia na demo) |
-| `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta, igapó destruído com céu em névoa, rio restaurado = cartão da vitória) |
+| `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta = Missão 1, igapó destruído com céu em névoa = Missão 2, rio restaurado = cartão da vitória das Missões 2 e 3) |
 | `bg_m4` | cenário | genérico | Sheet 08 (Balsa-Fortaleza) |
 | `plat_raft` | 128×48 (balsa de toras, deck a ~20% do topo) | 128×24 | hero_v2/cenarios_hd |
 

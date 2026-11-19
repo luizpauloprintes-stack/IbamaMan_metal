@@ -36,6 +36,43 @@ export const LEVELS = {
   },
 
   // --------------------------------------------------------------------------
+  // Missão 2 — Garimpo Amador: igapó destruído, garimpeiros, muitos tambores de Hg; acampamento com ondas
+  // --------------------------------------------------------------------------
+  2: {
+    levelW: 4000,
+    bg: 'bg_m2',
+    intro: 'Desmonte o garimpo no igarapé!',
+    terrain: [
+      ['mud', 0, 600], ['water', 600, 1100], ['mud', 1100, 1500], ['water', 1500, 2300],
+      ['mud', 2300, 2700], ['water', 2700, 3100], ['mud', 3100, 4000]
+    ],
+    platforms: [[460, 320], [820, 300], [1300, 320], [1650, 300], [2450, 310], [2880, 300]],
+    raft: { x: 1950, y: 335, minX: 1800, maxX: 2200, speed: 55 },
+    supplies: [[830, 260, 0], [1660, 260, 2], [2890, 260, 1]],
+    cages: [[1000, GROUND_Y, 2], [1380, GROUND_Y, 0], [2640, GROUND_Y, 3]],
+    // garimpo amador: tambores por toda parte (atire para explodir em cadeia)
+    barrels: [[520, 0], [548, 1], [1220, 0], [1250, 1], [2380, 0], [2408, 1], [2436, 0], [3020, 1],
+      [3560, 0], [3590, 1], [3860, 0], [3888, 1]],
+    decor: [['prop_sandbags', 380], ['prop_logs', 1160], ['prop_sandbags', 2560], ['prop_logs', 3300],
+      ['prop_sandbags', 3640], ['prop_logs', 3780]],
+    enemies: [
+      ['miner', 700, GROUND_Y], ['miner', 830, 280], ['miner', 1300, 300], ['miner', 1450, GROUND_Y],
+      ['miner', 1900, GROUND_Y], ['miner', 2460, 290], ['miner', 2600, GROUND_Y], ['miner', 2890, 280]
+    ],
+    waves: [
+      { at: 300, n: 3, side: 'right', type: 'miner' }, { at: 1100, n: 3, side: 'both', type: 'miner' },
+      { at: 1800, n: 4, side: 'right', type: 'miner' }, { at: 2500, n: 3, side: 'both', type: 'miner' }
+    ],
+    heliAt: 1750,
+    boss: {
+      type: 'camp', name: 'GARIMPEIROS', waves: [4, 5, 6],
+      alert: 'ACAMPAMENTO DO GARIMPO!', alertSub: 'Contenha os garimpeiros — depois o acampamento é embargado',
+      defeatText: 'ACAMPAMENTO DESMONTADO! +10000'
+    },
+    victory: { key: 'bg_restored', caption: 'O IGARAPÉ VAI SE RECUPERAR' }
+  },
+
+  // --------------------------------------------------------------------------
   // Missão 3 — Garimpo com Dragas: rio barrento, garimpeiros, Mega Draga
   // --------------------------------------------------------------------------
   3: {

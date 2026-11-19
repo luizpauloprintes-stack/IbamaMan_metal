@@ -80,6 +80,7 @@ export default class Logger extends Phaser.Physics.Arcade.Sprite {
   die() {
     this.state = 'dead';
     this.isTarget = false;
+    this.scene.onEnemyKilled?.(this);
     this.scene.addScore(LOGGER.score, this.x, this.y - 70);
     this.setFrame(3).setTint(0x9a8a7a);
     this.body.checkCollision.none = true;

@@ -210,7 +210,7 @@ panel("bg_sky",bgim,(22,716,679,1001),[(606,712,683,744),(606,800,683,834),(18,9
 cen=cv2.imread(_path("cen2"))
 panel("bg_m1",cen,(78,68,2498,708),[])            # floresta preservada HD (Missão 1)
 # igapó destruído HD (Missão 2): o céu vazado (branco) vira névoa em degradê
-sw=cen[770:1385,68:1564].copy()
+sw=cen[774:1381,76:1556].copy()   # sem a moldura escura do painel
 near=sw.min(axis=2)>228; lab,_=ndimage.label(near)
 sky=np.isin(lab,list(set(np.unique(lab[0]))-{0}))
 grad=np.linspace(0,1,sw.shape[0])[:,None,None]

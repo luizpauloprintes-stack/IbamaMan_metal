@@ -10,6 +10,7 @@ import Cage from '../objects/Cage.js';
 import MegaDraga from '../objects/MegaDraga.js';
 import Logger from '../objects/Logger.js';
 import Baron from '../objects/Baron.js';
+import Camp from '../objects/Camp.js';
 import { Sfx } from '../audio/Sfx.js';
 import Particles, { DEBRIS } from '../gfx/Particles.js';
 
@@ -230,7 +231,10 @@ export default class GameScene extends Phaser.Scene {
     this.bombs.getChildren().slice().forEach((b) => { if (b.y > GAME_H + 60 || b.x > v.right + 200) b.destroy(); });
     this.enemyShots.getChildren().slice().forEach((m) => { if (m.y > GAME_H + 40 || m.x < v.left - 100) m.destroy(); });
     this.buckets.getChildren().slice().forEach((k) => { if (k.x < v.left - 60) k.destroy(); });
-    this.enemies.getChildren().slice().forEach((e) => { if (e.isTarget && e.x < v.left - 220) e.destroy(); });
+    this.enemies.getChildren().slice().forEach((e) => {
+      if (e.isTarget && e.x < v.left - 220) e.destroy();
+      else if (e.isTarget && e.y > GAME_H + 80) { e.isTarget = false; this.onEnemyKilled(e); e.destroy(); } // caiu fora do mapa
+    });
   }
 
   checkTriggers() {
@@ -248,10 +252,19 @@ export default class GameScene extends Phaser.Scene {
         if (this.ended || this.enemies.countActive(true) >= MAX_ALIVE) return;
         const v = this.cameras.main.worldView;
         const left = w.side === 'left' || (w.side === 'both' && i % 2 === 1);
-        this.spawnEnemyAt(w.type || 'miner', left ? v.left - 20 : v.right + 20, GROUND_Y - 40);
+        this.spawnEnemyAt(w.type || 'miner', this.edgeX(left ? 'left' : 'right'), GROUND_Y - 40);
       });
     }
   }
+
+  // trecho de rio raso nessa posição? (usado pelo peixe-boi libertado para mergulhar)
+  isWater(x) { return this.level.terrain.some(([type, x0, x1]) => type === 'water' && x >= x0 && x <= x1); }
+
+  // usado por testes/depuração: cria uma gaiola em tempo de execução
+  spawnCage(x, animal) { return new Cage(this, x, GROUND_Y, animal); }
+
+  // inimigo derrotado (Miner/Logger avisam); o acampamento da Missão 2 conta as baixas
+  onEnemyKilled(e) { if (this.boss && this.boss.onEnemyKilled) this.boss.onEnemyKilled(e); }
 
   spawnEnemyAt(type, x, y) {
     return type === 'logger' ? new Logger(this, x, y) : new Miner(this, x, y);
@@ -260,8 +273,14 @@ export default class GameScene extends Phaser.Scene {
   // inimigo entrando pela borda da tela (usado pelo Barão ao chamar reforços)
   spawnEnemy(type, side) {
     if (this.enemies.countActive(true) >= MAX_ALIVE) return null;
+    return this.spawnEnemyAt(type, this.edgeX(side), GROUND_Y - 40);
+  }
+
+  // ponto de entrada logo fora da tela, mas sempre sobre o chão da fase (senão o inimigo cai no vazio)
+  edgeX(side) {
     const v = this.cameras.main.worldView;
-    return this.spawnEnemyAt(type, side === 'left' ? v.left - 20 : v.right + 20, GROUND_Y - 40);
+    const x = side === 'left' ? v.left - 20 : v.right + 20;
+    return Phaser.Math.Clamp(x, 24, this.level.levelW - 24);
   }
 
   spawnMud(x, y, vx, vy, scale = 1) {
@@ -354,7 +373,9 @@ export default class GameScene extends Phaser.Scene {
     Sfx.alarm();
     this.showBanner(B.alert, 2200, '#ff4d4d', B.alertSub);
 
-    if (B.type === 'baron') {
+    if (B.type === 'camp') {
+      this.boss = new Camp(this, lock + 560, GROUND_Y, B.waves);
+    } else if (B.type === 'baron') {
       this.boss = new Baron(this, lock + GAME_W - 12, GROUND_Y - 2, { left: lock + SCREEN_LEFT_MARGIN, right: lock + GAME_W });
       this.physics.add.collider(this.boss, this.groundBody);
     } else {
@@ -362,13 +383,17 @@ export default class GameScene extends Phaser.Scene {
       this.boss.x = lock + GAME_W - this.boss.displayWidth / 2 + 10;
     }
     this.bossState = { visible: true, hp: this.boss.hp, max: this.boss.maxHP, name: B.name };
+    if (this.boss.body) this.addBossColliders();
+    this.boss.enter();
+  }
+
+  addBossColliders() {
     this.physics.add.overlap(this.playerShots, this.boss, (a, b) => this.onShotHit(a, b));
     this.physics.add.overlap(this.bombs, this.boss, (a, b) => this.detonate(a.isShot ? a : b));
     this.physics.add.overlap(this.player, this.boss, () => {
       if (this.boss.defeated || this.player.invulnerable) return;
       if (this.player.hurt()) this.player.setVelocityX(-260);
     });
-    this.boss.enter();
   }
 
   onBossDefeated(boss) {
@@ -380,6 +405,10 @@ export default class GameScene extends Phaser.Scene {
     this.buckets.getChildren().slice().forEach((k) => { this.spawnExplosion(k.x, k.y, 0.5, false, true); k.destroy(); });
 
     if (boss instanceof Baron) { this.defeatBaron(boss); return; }
+    // acampamento: os tambores que sobraram na arena explodem em sequência (equipamento do garimpo)
+    if (boss instanceof Camp) {
+      this.barrels.getChildren().slice().forEach((b, i) => this.time.delayedCall(300 + i * 220, () => b.active && b.takeDamage && b.takeDamage(999)));
+    }
 
     // 8 explosões sequenciais aleatórias a cada 250ms
     let n = 0;

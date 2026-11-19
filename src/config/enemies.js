@@ -20,3 +20,6 @@ export const BARON = {
   summon: [2, 3],                 // madeireiros chamados por vez
   maxMinions: 4
 };
+
+// Missão 2: acampamento defendido por ondas (o "HP" é o número de garimpeiros restantes)
+export const CAMP = { width: 320, height: 90, firstDelay: 1600, spawnEvery: 650, maxAlive: 6 };

@@ -64,6 +64,7 @@ export default class Miner extends Phaser.Physics.Arcade.Sprite {
   die() {
     this.state = 'dead';
     this.isTarget = false;
+    this.scene.onEnemyKilled?.(this);
     this.scene.addScore(100, this.x, this.y - 60);
     this.anims.stop();
     this.setFrame(3);
