@@ -3,87 +3,98 @@ import { DEPTH, GROUND_Y } from '../config/constants.js';
 import { ts } from '../config/assets.js';
 import { DEBRIS } from '../gfx/Particles.js';
 
-// Animal libertado: a arte tem 1 quadro por animal, então o movimento é procedural (squash/stretch,
-// balanço e trajetória), no estilo dos resgates de Metal Slug.
-// 0 arara: bate as asas e sobe em ondas · 1 onça: galope · 2 macaco: pulos com cambalhota
-// 3 peixe-boi: salto, mergulho com respingo e nado submerso.
-const LIFE = [2600, 2000, 2400, 2800];
+// Animal libertado. Os quadros vêm de animals_free (tools/build_motion.py: 6 por animal) e a
+// trajetória é física (aceleração, gravidade nos saltos), em vez de deslizar uma imagem parada.
+// 0 arara: bate asas, decola em curva e ganha altura · 1 onça: sacode, arranca e galopa
+// 2 macaco: anda de quatro e pula obstáculos · 3 peixe-boi: nada no rio (ou se arrasta em terra até a água)
+const KEYS = ['free-macaw', 'free-jaguar', 'free-monkey', 'free-manatee'];
+const LIFE = [4200, 3600, 4200, 4400];
 
 export default class FreedAnimal extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, animal) {
-    super(scene, x, y, 'wildlife_cages', animal * 2 + 1);
+    super(scene, x, y, 'animals_free', animal * 6);
     scene.add.existing(this); // Sprite com preUpdate entra na lista de atualização da cena
     this.animal = animal;
-    this.base = ts('wildlife_cages');
-    this.x0 = x; this.y0 = y;
+    this.base = ts('animals_free');
     this.t = 0;
+    this.vx = 0; this.vy = 0;
+    this.ground = y;
     this.nextDust = 0;
     this.dove = false;
     this.water = animal === 3 && scene.isWater ? scene.isWater(x + 90) : false;
     this.setOrigin(0.5, 1).setScale(this.base).setDepth(DEPTH.fx);
-    if (animal === 0) this.setOrigin(0.5, 0.5).setY(y - 30);
-    // alegria ao sair: pequeno salto de "obrigado"
-    scene.tweens.add({ targets: this, scaleY: this.base * 1.15, duration: 90, yoyo: true });
+    this.play({ key: KEYS[animal], startFrame: Phaser.Math.Between(0, 5) });
+
+    if (animal === 0) { this.vx = 60; this.vy = -180; }                       // pulo de decolagem
+    if (animal === 1) { this.anims.pause(); this.shakeUntil = 450; }           // sacode antes de arrancar
+    if (animal === 2) { this.vy = -260; this.vx = 70; this.anims.timeScale = 0.6; } // salto de alegria
+    if (animal === 3) { this.anims.timeScale = this.water ? 1 : 0.5; this.vy = this.water ? -230 : 0; this.vx = this.water ? 110 : 0; }
   }
+
+  dust(n = 1) { this.scene.fx?.dust(this.x - 14, this.ground, n, 1); }
 
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
+    const dt = Math.min(delta, 50) / 1000;
     this.t += delta;
-    const t = this.t; const s = this.base; const dt = delta / 1000;
-    const fx = this.scene.fx;
+    const t = this.t;
+    const s = this.base;
 
-    if (this.animal === 0) {            // arara
-      this.x += 210 * dt;
-      this.y = this.y0 - 30 - 150 * (t / 1000) + 12 * Math.sin(t * 0.012);
-      const flap = Math.sin(t * 0.035);
-      this.setScale(s * (1 - 0.06 * flap), s * (1 + 0.2 * flap));
-      this.rotation = -0.18 + 0.08 * Math.sin(t * 0.012);
-    } else if (this.animal === 1) {     // onça
-      this.x += 330 * dt;
-      const g = t * 0.02;
-      this.y = this.y0 - Math.abs(Math.sin(g)) * 14;
-      this.rotation = 0.12 * Math.sin(g);
-      this.setScale(s * (1 + 0.1 * Math.sin(g * 2)), s * (1 - 0.08 * Math.sin(g * 2)));
-      if (time >= this.nextDust && Math.abs(Math.sin(g)) < 0.25) { this.nextDust = time + 120; fx.dust(this.x - 20, this.y0, 1, 1); }
-    } else if (this.animal === 2) {     // macaco
-      const period = 430;
-      const k = (t % period) / period;
-      const hop = Math.floor(t / period);
-      this.x += 190 * dt;
-      this.y = this.y0 - Math.sin(k * Math.PI) * (hop % 2 ? 56 : 34);
-      this.angle = hop % 2 ? -360 * k : 0;          // cambalhota a cada dois pulos
-      const squash = k < 0.12 || k > 0.88;
-      this.setScale(s * (squash ? 1.12 : 0.95), s * (squash ? 0.85 : 1.06));
-      if (k > 0.9 && time >= this.nextDust) { this.nextDust = time + period * 0.5; fx.dust(this.x, this.y0, 2); }
-    } else if (!this.water) {           // peixe-boi em terra: rasteja de barriga até sair da tela
-      const k = Math.abs(Math.sin(t * 0.011));
-      this.x += 110 * dt;
-      this.y = this.y0 - k * 9;
-      this.setScale(s * (1 + 0.08 * k), s * (1 - 0.08 * k));
-      this.rotation = -0.05 * k;
-    } else {                            // peixe-boi no rio
-      if (t < 650) {
-        const k = t / 650;
-        this.x = this.x0 + 90 * k;
-        this.y = this.y0 - Math.sin(k * Math.PI) * 60;
-        this.rotation = -0.35 + 0.95 * k;
+    if (this.animal === 0) {                         // arara: decolagem em curva, batendo mais rápido no início
+      this.vx = Math.min(150, this.vx + 120 * dt);
+      this.vy = Math.max(-95, this.vy - 40 * dt) + Math.sin(t * 0.011) * 4;
+      this.x += this.vx * dt; this.y += this.vy * dt;
+      this.anims.timeScale = Phaser.Math.Linear(1.6, 1, Math.min(1, t / 900));
+      this.rotation = Math.atan2(this.vy, this.vx) * 0.35;
+    } else if (this.animal === 1) {                  // onça: sacode o corpo, depois arranca acelerando
+      if (t < this.shakeUntil) {
+        this.rotation = Math.sin(t * 0.06) * 0.06;
+        this.setScale(s * (1 + Math.sin(t * 0.06) * 0.03), s);
       } else {
-        if (!this.dove) {
+        if (this.anims.isPaused) { this.anims.resume(); this.rotation = 0; this.setScale(s); this.dust(3); }
+        this.vx = Math.min(210, this.vx + 260 * dt);
+        this.anims.timeScale = 0.6 + this.vx / 210 * 0.6;
+        this.x += this.vx * dt;
+        if (time >= this.nextDust) { this.nextDust = time + 140; this.dust(1); }
+      }
+    } else if (this.animal === 2) {                  // macaco: salto inicial, depois anda/corre e salta de novo
+      this.vy += 900 * dt;
+      this.x += this.vx * dt; this.y += this.vy * dt;
+      if (this.y >= this.ground) {
+        this.y = this.ground;
+        if (this.vy > 120) this.dust(2);
+        this.vy = 0;
+        this.anims.timeScale = 1;
+        this.vx = Math.min(130, this.vx + 150 * dt);
+        if (t > 1400 && !this.hopped) { this.hopped = true; this.vy = -300; this.anims.timeScale = 0.5; }
+      }
+      this.rotation = this.y < this.ground - 2 ? Phaser.Math.Clamp(this.vy / 900, -0.3, 0.3) : 0;
+    } else if (!this.water) {                        // peixe-boi em terra: se arrasta em impulsos
+      const k = Math.max(0, Math.sin(t * 0.009));
+      this.x += 90 * k * dt;
+    } else {                                         // peixe-boi no rio: salta, mergulha e nada submerso
+      if (!this.dove) {
+        this.vy += 900 * dt;
+        this.x += this.vx * dt; this.y += this.vy * dt;
+        this.rotation = Phaser.Math.Clamp(this.vy / 600, -0.4, 0.6);
+        if (this.y >= GROUND_Y + 6 && this.vy > 0) {
           this.dove = true;
-          this.setDepth(DEPTH.water - 1); // passa por trás da lâmina d'água
-          fx.debris(this.x, GROUND_Y - 6, DEBRIS.water, 10);
-          fx.puff(this.x, GROUND_Y - 10, 0xcfe8f0, 1.6, 400);
+          this.setDepth(DEPTH.water - 1);              // passa por trás da lâmina d'água
+          this.scene.fx.debris(this.x, GROUND_Y - 6, DEBRIS.water, 12);
+          this.scene.fx.puff(this.x, GROUND_Y - 10, 0xcfe8f0, 1.6, 400);
         }
-        this.x += 130 * dt;
-        this.y = GROUND_Y + 14 + 4 * Math.sin(t * 0.008);
-        this.rotation = 0.05 * Math.sin(t * 0.008);
-        this.setAlpha(Math.max(0.35, this.alpha - dt * 0.15));
+      } else {
+        this.x += 85 * dt;
+        this.y = GROUND_Y + 20 + 4 * Math.sin(t * 0.006);
+        this.rotation = 0.06 * Math.sin(t * 0.006);
+        this.setAlpha(Math.max(0.4, this.alpha - dt * 0.2));
       }
     }
 
     // some ao fim da vida (fade) ou ao sair da tela
     const v = this.scene.cameras.main.worldView;
-    if (t > LIFE[this.animal] - 400) this.setAlpha(Math.max(0, this.alpha - dt * 2.5));
-    if (t > LIFE[this.animal] || this.x > v.right + 80 || this.y < v.top - 80) this.destroy();
+    const life = LIFE[this.animal];
+    if (t > life - 400) this.setAlpha(Math.max(0, this.alpha - dt * 2.5));
+    if (t > life || this.x > v.right + 80 || this.y < v.top - 80) this.destroy();
   }
 }

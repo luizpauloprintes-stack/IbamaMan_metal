@@ -27,3 +27,15 @@ export const CAMP = { width: 320, height: 90, firstDelay: 1600, spawnEvery: 650,
 // Missão 4: Balsa-Fortaleza (Mega Draga blindada) e a revanche do Barão
 export const FORTRESS = { hp: 1300, tint: 0xa9b2c4, riderScale: 1.0 };
 export const BARON_FINAL = { hp: 520 };
+
+// Movimento orgânico (src/gfx/Organic.js) e ritmo das animações de passada
+export const ORGANIC = {
+  breathRate: [0.0032, 0.0048],  // rad/ms (≈ 0.5–0.75 respirações por segundo)
+  breathAmp: 0.025,
+  leanMax: 0.07,                 // rad (~4°) inclinado para frente ao correr
+  leanSpeed: 140,                // velocidade em que a inclinação chega ao máximo
+  leanEase: 140,                 // ms para acompanhar a inclinação
+  landSquash: 0.14,
+  walkFps: 10,                   // passada base (ajustada pela velocidade de cada inimigo)
+  stagger: 160                   // ms de tranco ao levar dano
+};

@@ -176,7 +176,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------- loop
-  update(time) {
+  update(time, delta) {
     const c = this.registry.get('controls');
     if (!c) return;
 
@@ -191,7 +191,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.updateCamera();
-    this.enemies.getChildren().forEach((e) => e.update(time));
+    this.enemies.getChildren().forEach((e) => e.update(time, delta));
     this.updateRaft();
     this.updateRider();
     this.cleanup(time);
@@ -443,6 +443,11 @@ export default class GameScene extends Phaser.Scene {
   updateRider() {
     if (!this.rider || !this.rider.active || this.riderJumping || !this.boss) return;
     this.rider.setPosition(this.boss.x + this.riderOffset.x, this.boss.y + this.riderOffset.y);
+    // o Barão no convés respira e se equilibra com o balanço da balsa
+    const t = this.time.now;
+    const base = ts('boss_baron') * FORTRESS.riderScale;
+    this.rider.setScale(base * (1 - Math.sin(t * 0.004) * 0.012), base * (1 + Math.sin(t * 0.004) * 0.02));
+    this.rider.rotation = Math.sin(t * 0.0021) * 0.04;
     if (this.boss.phase === 2 && this.rider.frame.name !== 1) this.rider.setFrame(1); // enfurece junto
   }
 

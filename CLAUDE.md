@@ -12,6 +12,7 @@ Run-and-gun 2D arcade no estilo Metal Slug. O protagonista **IbamaMan** (fiscal 
 | `npm run dev` | servidor de desenvolvimento (teclado no PC) |
 | `npm run build` | build web em `dist/` (**rode antes de qualquer commit**) |
 | `npm run cap:sync` | build + copia `dist/` para `android/` |
+| `python3 tools/build_sheets.py && python3 tools/build_motion.py && python3 tools/build_icons.py` | regenera sprites, ciclos de movimento e ícone/capa (nesta ordem) |
 | `npm run android:apk` | gera `android/app/build/outputs/apk/debug/app-debug.apk` (precisa Android SDK + JDK 21) |
 
 O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push na `main` e publica uma **Release** com o arquivo `IbamaMan-Garimpo-Slug.apk`.
@@ -32,6 +33,7 @@ src/config/
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
+src/gfx/Organic.js         movimento "vivo" por cima dos quadros: respiração, inclinação ao andar, squash/stretch, recuo e tremor de motor (fase própria por instância)
 src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsulas, faíscas, estilhaços (teto de 140)
 src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
 src/scenes/
@@ -45,13 +47,15 @@ src/objects/
   Logger.js                madeireiro com motosserra (corpo a corpo, aviso com a lâmina erguida, fumaça do motor)
   Baron.js                 chefe Barão do Garimpo (investida, baldes de Hg, chama madeireiros; enfurece com 50% de HP)
   Cage.js                  gaiola com animal: quebra com tiro → solta o animal (FreedAnimal) e dropa bônus
-  FreedAnimal.js           animal libertado com movimento procedural (arara voa batendo asas, onça galopa,
-                           macaco pula com cambalhota, peixe-boi mergulha no rio ou rasteja em terra)
+  FreedAnimal.js           animal libertado: ciclo animals_free + trajetória física (arara decola em curva, onça sacode e arranca,
+                           macaco salta e corre, peixe-boi salta e nada submerso ou se arrasta em terra)
   Camp.js                  "chefe" da Missão 2: acampamento defendido por ondas; HP = garimpeiros restantes
   MegaDraga.js             chefe (1000 HP, 2 estados, jatos de rejeito, baldes de Hg); com opts {hp, tint} vira a Balsa-Fortaleza
 android/                   projeto nativo gerado pelo Capacitor (versionado)
 public/assets/sprites/     spritesheets gerados + manifest.json
 tools/build_sheets.py      recorta as folhas de arte em spritesheets
+tools/build_motion.py      gera ciclos de 6 quadros a partir das poses estáticas: passada (pernas giram no quadril) de garimpeiro/madeireiro/Barão,
+                           galope da onça, andar do macaco, bater de asas da arara, cauda do peixe-boi
 tools/build_icons.py       gera o ícone do app (todas as densidades + tools/icon_512.png p/ Play Store), a splash e a capa (title_cover)
 tools/source_sheets/       as 8 folhas de arte originais
 ```
@@ -96,6 +100,13 @@ tools/source_sheets/       as 8 folhas de arte originais
 ### Missão 2 — Garimpo Amador
 - Igapó destruído HD, trechos de igarapé raso, balsa móvel, 3 gaiolas (macaco, arara, peixe-boi), tambores de Hg em grupos (explodem em cadeia).
 - **Acampamento do garimpo** (`Camp`): a câmera trava e vêm 3 ondas de garimpeiros (4, 5 e 6) pelos dois lados; a barra "GARIMPEIROS" mostra quantos faltam. Ao zerar, os tambores da arena explodem em sequência e o acampamento é desmontado.
+
+### Movimento dos personagens
+- A arte tem 1 pose por ação; `tools/build_motion.py` cria os ciclos (`enemy_miner_walk`, `enemy_logger_walk`, `boss_baron_walk` 0–5 normal/6–11 enfurecido, `animals_free` 6 por animal) e anima com `miner-walk`, `logger-walk`, `baron-walk(-rage)`, `free-*` (BootScene).
+- Inimigos alternam textura: passada = sheet `_walk`; poses (parado, golpe, dano, morte) = sheet original. Use `pose(n)` (para a animação e troca a textura), **nunca `setFrame`** depois de tocar uma passada.
+- Cada inimigo tem um `Organic` (`this.org`): respira parado, inclina ao correr, `tilt()` para recuo/tranco e `kick()` para squash. Velocidade da passada (`anims.timeScale`) acompanha a velocidade de cada um e começa num quadro aleatório, para não andarem em sincronia. O garimpeiro hesita de vez em quando; todos recuam com tranco ao levar tiro.
+- A cena chama `enemy.update(time, delta)` — o `delta` é obrigatório (sem ele a escala vira NaN e o inimigo some).
+- Callbacks com atraso (`delayedCall`) em inimigos sempre checam `this.active` (o inimigo pode ter sido removido).
 
 ### Tela de vitória
 - Cada missão tem em `levels.js` → `victory`: `title` (ex.: "VOCÊ SALVOU A FLORESTA!"), `lines` (conquistas mostradas uma a uma com ★) e o cartão (`key`, `caption`). A última conquista é sempre "Animais libertados: N" (contado em `scene.rescued`).
@@ -152,8 +163,11 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `player_shoot` | 5 × **96×64** (tiro parado, clarão e cápsulas na arte) | 5 × 64×64 | hero_v2/hero_tiro |
 | `player_pose` | 4 × **96×64** (parado, agachado, pulo, dano) | 4 × 64×64 | hero_v2 (em_pe, agachado, parado→pulo) |
 | `player_bomb_win` | 10 × **96×64** (0–4 arremesso, 5–9 vitória) | 10 × 64×64 | Sheet 03 |
-| `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | Sheet 04 + hero_v2/inimigos_v2 (jatos) |
+| `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | hero_v2/inimigos_v2 (parado = quadro do jato sem a lama, gerado por build_motion) + Sheet 04 (fuga) |
 | `enemy_logger` | 4 × **128×84** | 4 × 64×64 | hero_v2/inimigos_v2 (0–1) + Sheet 04 (2–3) |
+| `enemy_miner_walk`, `enemy_logger_walk` | 6 × mesmo quadro da sheet base | genérico | tools/build_motion.py |
+| `boss_baron_walk` | 12 × 96×84 | genérico | tools/build_motion.py |
+| `animals_free` | 24 × 64×64 | genérico | tools/build_motion.py |
 | `ally_gef_heli` | 1 × 192×128 | idem | hero_v2/heli_gef |
 | `slug_boat` / `slug_quad` | 2 × 128×80 | idem | Sheet 05 topo (ainda não usados) |
 | `boss_mega_draga` | 2 × **440×230** (normal, avariada) | 2 × 320×220 | hero_v2/mega_draga |
