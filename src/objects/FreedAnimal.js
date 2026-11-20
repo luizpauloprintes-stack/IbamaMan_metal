@@ -3,19 +3,20 @@ import { DEPTH, GROUND_Y } from '../config/constants.js';
 import { ts } from '../config/assets.js';
 import { DEBRIS } from '../gfx/Particles.js';
 
-// Animal libertado. Os quadros vêm de animals_free (tools/build_motion.py: 8 por animal) e a
+// Animal libertado. Os quadros vêm das folhas desenhadas animal_* (tools/build_cycles.py) e a
 // trajetória é física (aceleração, gravidade nos saltos), em vez de deslizar uma imagem parada.
 // 0 arara: bate asas, decola em curva e ganha altura · 1 onça: sacode, arranca e galopa
 // 2 macaco: anda de quatro e pula obstáculos · 3 peixe-boi: nada no rio (ou se arrasta em terra até a água)
 const KEYS = ['free-macaw', 'free-jaguar', 'free-monkey', 'free-manatee'];
+const TEX = ['animal_macaw', 'animal_jaguar', 'animal_monkey', 'animal_manatee'];
 const LIFE = [4200, 3600, 4200, 4400];
 
 export default class FreedAnimal extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, animal) {
-    super(scene, x, y, 'animals_free', animal * 8);
+    super(scene, x, y, TEX[animal], 0);
     scene.add.existing(this); // Sprite com preUpdate entra na lista de atualização da cena
     this.animal = animal;
-    this.base = ts('animals_free');
+    this.base = ts(TEX[animal]);
     this.t = 0;
     this.vx = 0; this.vy = 0;
     this.ground = y;
@@ -23,7 +24,7 @@ export default class FreedAnimal extends Phaser.GameObjects.Sprite {
     this.dove = false;
     this.water = animal === 3 && scene.isWater ? scene.isWater(x + 90) : false;
     this.setOrigin(0.5, 1).setScale(this.base).setDepth(DEPTH.fx);
-    this.play({ key: KEYS[animal], startFrame: Phaser.Math.Between(0, 7) });
+    this.play({ key: KEYS[animal], startFrame: Phaser.Math.Between(0, scene.anims.get(KEYS[animal]).frames.length - 1) });
 
     if (animal === 0) { this.vx = 60; this.vy = -180; }                       // pulo de decolagem
     if (animal === 1) { this.anims.pause(); this.shakeUntil = 450; }           // sacode antes de arrancar

@@ -33,7 +33,7 @@ export default class Logger extends Phaser.Physics.Arcade.Sprite {
   pose(frame) { if (!this.active) return; this.anims.stop(); this.setTexture('enemy_logger', frame); }
 
   walk() {
-    this.play({ key: 'logger-walk', startFrame: Phaser.Math.Between(0, 7) }, true);
+    this.play({ key: 'logger-walk', startFrame: Phaser.Math.Between(0, this.scene.anims.get('logger-walk').frames.length - 1) }, true);
     this.anims.timeScale = (this.speed / 80) * Phaser.Math.FloatBetween(0.9, 1.1);
   }
 

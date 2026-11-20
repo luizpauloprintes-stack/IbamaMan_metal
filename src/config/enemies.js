@@ -32,7 +32,7 @@ export const BARON_FINAL = { hp: 520 };
 export const ORGANIC = {
   breathRate: [0.0032, 0.0048],  // rad/ms (≈ 0.5–0.75 respirações por segundo)
   breathAmp: 0.025,
-  leanMax: 0.07,                 // rad (~4°) inclinado para frente ao correr
+  leanMax: 0.03,                 // rad (~2°): a arte da corrida já vem inclinada
   leanSpeed: 140,                // velocidade em que a inclinação chega ao máximo
   leanEase: 140,                 // ms para acompanhar a inclinação
   landSquash: 0.14,

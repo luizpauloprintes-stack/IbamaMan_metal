@@ -1,0 +1,11 @@
+{
+ "enemy_miner_walk": 7,
+ "enemy_logger_walk": 8,
+ "baron_walk_n": 5,
+ "baron_walk_r": 9,
+ "player_throw": 5,
+ "animal_macaw": 12,
+ "animal_jaguar": 8,
+ "animal_monkey": 8,
+ "animal_manatee": 8
+}

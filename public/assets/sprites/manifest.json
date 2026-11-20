@@ -200,6 +200,13 @@
   "res": 2
  },
  {
+  "key": "boss_baron_walk",
+  "file": "boss_baron_walk.png",
+  "frameWidth": 192,
+  "frameHeight": 168,
+  "res": 2
+ },
+ {
   "key": "enemy_miner_walk",
   "file": "enemy_miner_walk.png",
   "frameWidth": 256,
@@ -214,15 +221,36 @@
   "res": 2
  },
  {
-  "key": "boss_baron_walk",
-  "file": "boss_baron_walk.png",
+  "key": "player_throw",
+  "file": "player_throw.png",
   "frameWidth": 192,
-  "frameHeight": 168,
+  "frameHeight": 128,
   "res": 2
  },
  {
-  "key": "animals_free",
-  "file": "animals_free.png",
+  "key": "animal_macaw",
+  "file": "animal_macaw.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
+ },
+ {
+  "key": "animal_jaguar",
+  "file": "animal_jaguar.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
+ },
+ {
+  "key": "animal_monkey",
+  "file": "animal_monkey.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "res": 2
+ },
+ {
+  "key": "animal_manatee",
+  "file": "animal_manatee.png",
   "frameWidth": 128,
   "frameHeight": 128,
   "res": 2

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SPRITE_MANIFEST } from '../config/assets.js';
 import { generatePlaceholders } from '../gfx/placeholders.js';
+import CYCLES from '../../public/assets/sprites/cycles.json';
 
 export default class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
@@ -26,16 +27,19 @@ export default class BootScene extends Phaser.Scene {
     const range = (key, start, end) => a.generateFrameNumbers(key, { start, end });
     a.create({ key: 'player-run', frames: range('player_run', 0, 4), frameRate: 12, repeat: -1 });
     a.create({ key: 'player-shoot', frames: range('player_shoot', 0, 4), frameRate: 14, repeat: -1 });
-    a.create({ key: 'player-throw', frames: range('player_bomb_win', 0, 4), frameRate: 20, repeat: 0 });
+    a.create({ key: 'player-throw', frames: a.generateFrameNumbers('player_throw', { start: 0, end: CYCLES.player_throw - 1 }), frameRate: 20, repeat: 0 });
     a.create({ key: 'player-win', frames: range('player_bomb_win', 5, 9), frameRate: 6, repeat: -1 });
-    // passadas e movimentos gerados por tools/build_motion.py (rig de recorte, 8 quadros por ciclo)
-    const cyc = (key, from, n = 8) => a.generateFrameNumbers(key, { start: from, end: from + n - 1 });
-    a.create({ key: 'miner-walk', frames: cyc('enemy_miner_walk', 0), frameRate: 12, repeat: -1 });
-    a.create({ key: 'logger-walk', frames: cyc('enemy_logger_walk', 0), frameRate: 12, repeat: -1 });
-    a.create({ key: 'baron-walk', frames: cyc('boss_baron_walk', 0), frameRate: 11, repeat: -1 });
-    a.create({ key: 'baron-walk-rage', frames: cyc('boss_baron_walk', 8), frameRate: 13, repeat: -1 });
-    ['free-macaw', 'free-jaguar', 'free-monkey', 'free-manatee'].forEach((k, i) =>
-      a.create({ key: k, frames: cyc('animals_free', i * 8), frameRate: [16, 18, 14, 10][i], repeat: -1 }));
+    // ciclos desenhados (tools/build_cycles.py); a quantidade de quadros de cada folha vem de cycles.json
+    const N = CYCLES;
+    const seq = (key, from, n) => a.generateFrameNumbers(key, { start: from, end: from + n - 1 });
+    a.create({ key: 'miner-walk', frames: seq('enemy_miner_walk', 0, N.enemy_miner_walk), frameRate: 11, repeat: -1 });
+    a.create({ key: 'logger-walk', frames: seq('enemy_logger_walk', 0, N.enemy_logger_walk), frameRate: 12, repeat: -1 });
+    a.create({ key: 'baron-walk', frames: seq('boss_baron_walk', 0, N.baron_walk_n), frameRate: 7, repeat: -1 });
+    a.create({ key: 'baron-walk-rage', frames: seq('boss_baron_walk', N.baron_walk_n, N.baron_walk_r), frameRate: 14, repeat: -1 });
+    a.create({ key: 'free-macaw', frames: seq('animal_macaw', 0, N.animal_macaw), frameRate: 18, repeat: -1 });
+    a.create({ key: 'free-jaguar', frames: seq('animal_jaguar', 0, N.animal_jaguar), frameRate: 14, repeat: -1 });
+    a.create({ key: 'free-monkey', frames: seq('animal_monkey', 0, N.animal_monkey), frameRate: 12, repeat: -1 });
+    a.create({ key: 'free-manatee', frames: seq('animal_manatee', 0, N.animal_manatee), frameRate: 8, repeat: -1 });
     a.create({ key: 'miner-spray', frames: range('enemy_miner_hose', 1, 2), frameRate: 10, repeat: 3 });
     a.create({ key: 'logger-attack', frames: range('enemy_logger', 0, 1), frameRate: 6, repeat: -1 });
     a.create({ key: 'fx-explosion', frames: range('fx_explosion', 0, 9), frameRate: 22, repeat: 0 });

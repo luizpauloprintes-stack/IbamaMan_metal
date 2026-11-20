@@ -32,7 +32,7 @@ export default class Miner extends Phaser.Physics.Arcade.Sprite {
   pose(frame) { if (!this.active) return; this.anims.stop(); this.setTexture('enemy_miner_hose', frame); }
 
   walk() {
-    this.play({ key: 'miner-walk', startFrame: Phaser.Math.Between(0, 7) }, true);
+    this.play({ key: 'miner-walk', startFrame: Phaser.Math.Between(0, this.scene.anims.get('miner-walk').frames.length - 1) }, true);
     this.anims.timeScale = (this.speed / 60) * Phaser.Math.FloatBetween(0.9, 1.1);
   }
 
