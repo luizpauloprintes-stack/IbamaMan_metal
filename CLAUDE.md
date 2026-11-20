@@ -165,7 +165,7 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `boss_baron` | 2 × 96×84 (normal, enfurecido) | genérico | hero_v2/barao_normal + barao_furioso (Missões 1 e 4) |
 | `ally_gef_agent` | 2 × 96×64 | genérico | inimigos_v2 + Sheet 04 |
 | `prop_hg_barrels` (2), `prop_logs`, `prop_sandbags` | 32×40, 64×40, 56×40 | genérico | Sheet 06 (tambores explodem em cadeia na demo) |
-| `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta = Missão 1, igapó destruído com céu em névoa = Missão 2, rio restaurado = cartão da vitória das Missões 2 e 3) |
+| `bg_m1`, `bg_m2`, `bg_restored` | cenários | genérico | hero_v2/cenarios_hd (floresta = Missão 1, igapó destruído com céu em névoa = Missão 2, rio restaurado ("O RIO VOLTOU A FICAR LIMPO") = cartão da vitória das Missões 2 e 3) |
 | `bg_m4` | cenário | genérico | Sheet 08 (só a parte esquerda: floresta em chamas e rio, sem a draga pintada) |
 | `plat_raft` | 128×48 (balsa de toras, deck a ~20% do topo) | 128×24 | hero_v2/cenarios_hd |
 

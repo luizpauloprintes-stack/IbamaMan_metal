@@ -116,7 +116,7 @@ export const LEVELS = {
       defeatText: 'DRAGA DESTRUÍDA! +10000'
     },
     victory: {
-      key: 'bg_restored', caption: 'O RIO VOLTOU A RESPIRAR',
+      key: 'bg_restored', caption: 'O RIO VOLTOU A FICAR LIMPO',
       title: 'VOCÊ SALVOU\nO RIO!',
       lines: ['Explodiu a Mega Draga', 'Acabou com o mercúrio na água', 'Os peixes vão voltar']
     }
