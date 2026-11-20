@@ -63,10 +63,10 @@ export const KEYS = {
   bg_restored: { frames: 1, w: 512, h: 135 },
   title_cover: { frames: 1, w: 800, h: 450 },
   // ciclos de movimento (tools/build_motion.py)
-  enemy_miner_walk: { frames: 6, w: 64, h: 64 },
-  enemy_logger_walk: { frames: 6, w: 64, h: 64 },
-  boss_baron_walk: { frames: 12, w: 96, h: 84 },   // 0–5 normal, 6–11 enfurecido
-  animals_free: { frames: 24, w: 64, h: 64 },      // 6 por animal: arara, onça, macaco, peixe-boi     // capa da tela de título (tools/build_icons.py)
+  enemy_miner_walk: { frames: 8, w: 64, h: 64 },
+  enemy_logger_walk: { frames: 8, w: 64, h: 64 },
+  boss_baron_walk: { frames: 16, w: 96, h: 84 },   // 0–7 normal, 8–15 enfurecido
+  animals_free: { frames: 32, w: 64, h: 64 },      // 8 por animal: arara, onça, macaco, peixe-boi     // capa da tela de título (tools/build_icons.py)
   bg_forest: { frames: 1, w: 800, h: 180 },
   bg_river: { frames: 1, w: 800, h: 90 }
 };

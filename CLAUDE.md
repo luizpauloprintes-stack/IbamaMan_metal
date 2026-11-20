@@ -54,8 +54,9 @@ src/objects/
 android/                   projeto nativo gerado pelo Capacitor (versionado)
 public/assets/sprites/     spritesheets gerados + manifest.json
 tools/build_sheets.py      recorta as folhas de arte em spritesheets
-tools/build_motion.py      gera ciclos de 6 quadros a partir das poses estáticas: passada (pernas giram no quadril) de garimpeiro/madeireiro/Barão,
-                           galope da onça, andar do macaco, bater de asas da arara, cauda do peixe-boi
+tools/build_motion.py      rig de recorte: divide cada pose em cabeça, tronco (braços+arma), coxa e canela e gera ciclos de 8 quadros
+                           girando pescoço/quadril/joelho (corrida de garimpeiro/madeireiro/Barão, galope da onça, macaco com cauda),
+                           mais asas da arara e cauda do peixe-boi
 tools/build_icons.py       gera o ícone do app (todas as densidades + tools/icon_512.png p/ Play Store), a splash e a capa (title_cover)
 tools/source_sheets/       as 8 folhas de arte originais
 ```
@@ -102,7 +103,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 - **Acampamento do garimpo** (`Camp`): a câmera trava e vêm 3 ondas de garimpeiros (4, 5 e 6) pelos dois lados; a barra "GARIMPEIROS" mostra quantos faltam. Ao zerar, os tambores da arena explodem em sequência e o acampamento é desmontado.
 
 ### Movimento dos personagens
-- A arte tem 1 pose por ação; `tools/build_motion.py` cria os ciclos (`enemy_miner_walk`, `enemy_logger_walk`, `boss_baron_walk` 0–5 normal/6–11 enfurecido, `animals_free` 6 por animal) e anima com `miner-walk`, `logger-walk`, `baron-walk(-rage)`, `free-*` (BootScene).
+- A arte tem 1 pose por ação; `tools/build_motion.py` cria os ciclos (`enemy_miner_walk`, `enemy_logger_walk`, `boss_baron_walk` 0–7 normal/8–15 enfurecido, `animals_free` 8 por animal) com um rig de recorte: as articulações (pescoço, quadril, joelho, divisão das pernas) de cada personagem são frações da caixa do conteúdo, configuradas nas chamadas `human_rig`/`quad_rig` no fim do script. Se trocar a arte de um personagem, reajuste essas frações e anima com `miner-walk`, `logger-walk`, `baron-walk(-rage)`, `free-*` (BootScene).
 - Inimigos alternam textura: passada = sheet `_walk`; poses (parado, golpe, dano, morte) = sheet original. Use `pose(n)` (para a animação e troca a textura), **nunca `setFrame`** depois de tocar uma passada.
 - Cada inimigo tem um `Organic` (`this.org`): respira parado, inclina ao correr, `tilt()` para recuo/tranco e `kick()` para squash. Velocidade da passada (`anims.timeScale`) acompanha a velocidade de cada um e começa num quadro aleatório, para não andarem em sincronia. O garimpeiro hesita de vez em quando; todos recuam com tranco ao levar tiro.
 - A cena chama `enemy.update(time, delta)` — o `delta` é obrigatório (sem ele a escala vira NaN e o inimigo some).
@@ -165,9 +166,9 @@ Tamanhos abaixo em unidades lógicas (o PNG real tem o dobro).
 | `player_bomb_win` | 10 × **96×64** (0–4 arremesso, 5–9 vitória) | 10 × 64×64 | Sheet 03 |
 | `enemy_miner_hose` | 4 × **128×64** (parado, jato, jato, fuga) | 4 × 64×64 | hero_v2/inimigos_v2 (parado = quadro do jato sem a lama, gerado por build_motion) + Sheet 04 (fuga) |
 | `enemy_logger` | 4 × **128×84** | 4 × 64×64 | hero_v2/inimigos_v2 (0–1) + Sheet 04 (2–3) |
-| `enemy_miner_walk`, `enemy_logger_walk` | 6 × mesmo quadro da sheet base | genérico | tools/build_motion.py |
-| `boss_baron_walk` | 12 × 96×84 | genérico | tools/build_motion.py |
-| `animals_free` | 24 × 64×64 | genérico | tools/build_motion.py |
+| `enemy_miner_walk`, `enemy_logger_walk` | 8 × mesmo quadro da sheet base | genérico | tools/build_motion.py |
+| `boss_baron_walk` | 16 × 96×84 | genérico | tools/build_motion.py |
+| `animals_free` | 32 × 64×64 | genérico | tools/build_motion.py |
 | `ally_gef_heli` | 1 × 192×128 | idem | hero_v2/heli_gef |
 | `slug_boat` / `slug_quad` | 2 × 128×80 | idem | Sheet 05 topo (ainda não usados) |
 | `boss_mega_draga` | 2 × **440×230** (normal, avariada) | 2 × 320×220 | hero_v2/mega_draga |

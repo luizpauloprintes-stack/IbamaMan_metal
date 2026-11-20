@@ -28,14 +28,14 @@ export default class BootScene extends Phaser.Scene {
     a.create({ key: 'player-shoot', frames: range('player_shoot', 0, 4), frameRate: 14, repeat: -1 });
     a.create({ key: 'player-throw', frames: range('player_bomb_win', 0, 4), frameRate: 20, repeat: 0 });
     a.create({ key: 'player-win', frames: range('player_bomb_win', 5, 9), frameRate: 6, repeat: -1 });
-    // passadas e movimentos gerados por tools/build_motion.py (6 quadros por ciclo)
-    const cyc = (key, from, n = 6) => a.generateFrameNumbers(key, { start: from, end: from + n - 1 });
-    a.create({ key: 'miner-walk', frames: cyc('enemy_miner_walk', 0), frameRate: 10, repeat: -1 });
-    a.create({ key: 'logger-walk', frames: cyc('enemy_logger_walk', 0), frameRate: 10, repeat: -1 });
-    a.create({ key: 'baron-walk', frames: cyc('boss_baron_walk', 0), frameRate: 9, repeat: -1 });
-    a.create({ key: 'baron-walk-rage', frames: cyc('boss_baron_walk', 6), frameRate: 11, repeat: -1 });
+    // passadas e movimentos gerados por tools/build_motion.py (rig de recorte, 8 quadros por ciclo)
+    const cyc = (key, from, n = 8) => a.generateFrameNumbers(key, { start: from, end: from + n - 1 });
+    a.create({ key: 'miner-walk', frames: cyc('enemy_miner_walk', 0), frameRate: 12, repeat: -1 });
+    a.create({ key: 'logger-walk', frames: cyc('enemy_logger_walk', 0), frameRate: 12, repeat: -1 });
+    a.create({ key: 'baron-walk', frames: cyc('boss_baron_walk', 0), frameRate: 11, repeat: -1 });
+    a.create({ key: 'baron-walk-rage', frames: cyc('boss_baron_walk', 8), frameRate: 13, repeat: -1 });
     ['free-macaw', 'free-jaguar', 'free-monkey', 'free-manatee'].forEach((k, i) =>
-      a.create({ key: k, frames: cyc('animals_free', i * 6), frameRate: [14, 16, 12, 8][i], repeat: -1 }));
+      a.create({ key: k, frames: cyc('animals_free', i * 8), frameRate: [16, 18, 14, 10][i], repeat: -1 }));
     a.create({ key: 'miner-spray', frames: range('enemy_miner_hose', 1, 2), frameRate: 10, repeat: 3 });
     a.create({ key: 'logger-attack', frames: range('enemy_logger', 0, 1), frameRate: 6, repeat: -1 });
     a.create({ key: 'fx-explosion', frames: range('fx_explosion', 0, 9), frameRate: 22, repeat: 0 });
