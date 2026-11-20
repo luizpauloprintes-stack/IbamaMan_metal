@@ -33,6 +33,7 @@ export default class Cage extends Phaser.Physics.Arcade.Sprite {
     this.isTarget = false;
     const scene = this.scene;
     Sfx.rescue();
+    scene.rescued = (scene.rescued || 0) + 1;
     scene.addScore(500, this.x, this.y - 70, `${ANIMAL_NAMES[this.animal]} RESGATADA! +500`);
     scene.spawnExplosion(this.x, this.y - 30, 0.6, false);
     scene.fx.debris(this.x, this.y - 30, 0x8c5a2b, 12);

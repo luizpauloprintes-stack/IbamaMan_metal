@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, GRAVITY_Y, RENDER_ZOOM } from './config/constants.js';
 import BootScene from './scenes/BootScene.js';
+import TitleScene from './scenes/TitleScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
 
@@ -20,7 +21,7 @@ const config = {
     arcade: { gravity: { x: 0, y: GRAVITY_Y }, debug: false }
   },
   input: { activePointers: 3 },
-  scene: [BootScene, GameScene, UIScene]
+  scene: [BootScene, TitleScene, GameScene, UIScene]
 };
 
 const game = new Phaser.Game(config);

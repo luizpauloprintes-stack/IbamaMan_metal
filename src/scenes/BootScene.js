@@ -18,7 +18,7 @@ export default class BootScene extends Phaser.Scene {
   create() {
     generatePlaceholders(this);
     this.createAnimations();
-    this.scene.start('GameScene');
+    this.scene.start('TitleScene');
   }
 
   createAnimations() {

@@ -61,6 +61,7 @@ export const KEYS = {
   bg_m2: { frames: 1, w: 800, h: 450 },
   bg_m4: { frames: 1, w: 800, h: 450 },
   bg_restored: { frames: 1, w: 512, h: 135 },
+  title_cover: { frames: 1, w: 800, h: 450 },     // capa da tela de título (tools/build_icons.py)
   bg_forest: { frames: 1, w: 800, h: 180 },
   bg_river: { frames: 1, w: 800, h: 90 }
 };

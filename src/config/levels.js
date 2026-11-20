@@ -32,7 +32,11 @@ export const LEVELS = {
       alert: 'ALERTA! BARÃO DO GARIMPO', alertSub: 'O mandante da derrubada chegou!',
       defeatText: 'BARÃO AUTUADO! +10000'
     },
-    victory: { key: 'bg_m1', caption: 'A FLORESTA FICA DE PÉ' }
+    victory: {
+      key: 'bg_m1', caption: 'A FLORESTA FICA DE PÉ',
+      title: 'VOCÊ SALVOU\nA FLORESTA!',
+      lines: ['Prendeu os criminosos ambientais', 'Destruiu as motosserras do Barão', 'Parou o desmatamento']
+    }
   },
 
   // --------------------------------------------------------------------------
@@ -69,7 +73,11 @@ export const LEVELS = {
       alert: 'ACAMPAMENTO DO GARIMPO!', alertSub: 'Contenha os garimpeiros — depois o acampamento é embargado',
       defeatText: 'ACAMPAMENTO DESMONTADO! +10000'
     },
-    victory: { key: 'bg_restored', caption: 'O IGARAPÉ VAI SE RECUPERAR' }
+    victory: {
+      key: 'bg_restored', caption: 'O IGARAPÉ VAI SE RECUPERAR',
+      title: 'VOCÊ ACABOU\nCOM O GARIMPO!',
+      lines: ['Explodiu as máquinas do garimpo', 'Tirou o mercúrio do igarapé', 'Prendeu os garimpeiros ilegais']
+    }
   },
 
   // --------------------------------------------------------------------------
@@ -107,7 +115,11 @@ export const LEVELS = {
       alert: 'ALERTA! MEGA DRAGA', alertSub: 'Garimpo ilegal no rio — destrua a draga!',
       defeatText: 'DRAGA DESTRUÍDA! +10000'
     },
-    victory: { key: 'bg_restored', caption: 'O RIO VOLTOU A RESPIRAR' }
+    victory: {
+      key: 'bg_restored', caption: 'O RIO VOLTOU A RESPIRAR',
+      title: 'VOCÊ SALVOU\nO RIO!',
+      lines: ['Explodiu a Mega Draga', 'Acabou com o mercúrio na água', 'Os peixes vão voltar']
+    }
   }
 };
 
@@ -144,7 +156,11 @@ LEVELS[4] = {
     finalName: 'BARÃO DO GARIMPO', finalAlert: 'O BARÃO NÃO DESISTE!', finalSub: 'Revanche: prenda o Barão!',
     defeatText: 'BARÃO PRESO! +10000'
   },
-  victory: { key: 'bg_restored', caption: 'A AMAZÔNIA AGRADECE' }
+  victory: {
+    key: 'bg_restored', caption: 'A AMAZÔNIA AGRADECE',
+    title: 'VOCÊ PRENDEU O\nCHEFÃO DO GARIMPO!',
+    lines: ['Afundou a Balsa-Fortaleza', 'Prendeu os criminosos ambientais', 'Salvou os rios e a floresta']
+  }
 };
 
 // Trava da câmera/arena do chefe a partir da largura da fase

@@ -193,5 +193,10 @@
   "key": "bg_restored",
   "file": "bg_restored.jpg",
   "res": 2
+ },
+ {
+  "key": "title_cover",
+  "file": "title_cover.jpg",
+  "res": 2
  }
 ]

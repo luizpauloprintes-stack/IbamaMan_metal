@@ -35,7 +35,8 @@ src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.gra
 src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsulas, faíscas, estilhaços (teto de 140)
 src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
 src/scenes/
-  BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações
+  BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações → TitleScene
+  TitleScene.js            capa do jogo (title_cover); toque/tecla começa a campanha; fim da campanha volta para cá
   GameScene.js             monta a fase de levels.js; câmera, colisões, ondas, gaiolas, power-ups, chefe, vitória → próxima missão
   UIScene.js               HUD + direcional flutuante + botões touch e teclado (sobreposta à GameScene)
 src/objects/
@@ -51,6 +52,7 @@ src/objects/
 android/                   projeto nativo gerado pelo Capacitor (versionado)
 public/assets/sprites/     spritesheets gerados + manifest.json
 tools/build_sheets.py      recorta as folhas de arte em spritesheets
+tools/build_icons.py       gera o ícone do app (todas as densidades + tools/icon_512.png p/ Play Store), a splash e a capa (title_cover)
 tools/source_sheets/       as 8 folhas de arte originais
 ```
 
@@ -61,7 +63,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Na `UIScene`, ponteiros vêm em pixels do canvas: divida por `RENDER_ZOOM`.
 
 ### Fluxo entre cenas
-- `BootScene` → `GameScene`; a `GameScene` lança a `UIScene` por cima.
+- `BootScene` → `TitleScene` (capa) → `GameScene`; a `GameScene` lança a `UIScene` por cima. Depois da Missão 4, FIRE volta à capa.
 - **Controles:** a `UIScene` escreve em `registry.get('controls')` (`left/right/crouch/jump/fire/bomb` + bordas `jumpQueued`, `bombQueued`, `firePressed`). A `GameScene` lê e consome as bordas.
 - **Controles touch:** direcional *flutuante* (nasce onde o polegar toca na metade esquerda e some ao soltar); botões FIRE/JUMP/BOMB pequenos e translúcidos no canto direito, que quase somem quando o IbamaMan passa por trás. Só aparecem em aparelhos com toque. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
 - **HUD:** a `UIScene` faz *polling* de `GameScene.getHudState()` a cada quadro (evita listeners órfãos ao reiniciar a cena).
@@ -69,7 +71,8 @@ tools/source_sheets/       as 8 folhas de arte originais
 ### Paisagem / Android
 - Trava em `android/app/src/main/AndroidManifest.xml` → `android:screenOrientation="sensorLandscape"`.
 - `MainActivity.java` deixa a tela cheia imersiva e mantém a tela ligada.
-- Se recriar a pasta `android/` (`npx cap add android`), **reaplique essas duas mudanças**.
+- Ícone adaptativo usa `@mipmap/ic_launcher_background` (imagem) + `ic_launcher_foreground`; o tema de abertura (`styles.xml`) define `windowSplashScreenBackground` #16301A e o ícone animado para Android 12+.
+- Se recriar a pasta `android/` (`npx cap add android`), **reaplique essas mudanças** e rode `python3 tools/build_icons.py`.
 
 ## Campanha (4 missões)
 
@@ -94,6 +97,9 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Igapó destruído HD, trechos de igarapé raso, balsa móvel, 3 gaiolas (macaco, arara, peixe-boi), tambores de Hg em grupos (explodem em cadeia).
 - **Acampamento do garimpo** (`Camp`): a câmera trava e vêm 3 ondas de garimpeiros (4, 5 e 6) pelos dois lados; a barra "GARIMPEIROS" mostra quantos faltam. Ao zerar, os tambores da arena explodem em sequência e o acampamento é desmontado.
 
+### Tela de vitória
+- Cada missão tem em `levels.js` → `victory`: `title` (ex.: "VOCÊ SALVOU A FLORESTA!"), `lines` (conquistas mostradas uma a uma com ★) e o cartão (`key`, `caption`). A última conquista é sempre "Animais libertados: N" (contado em `scene.rescued`).
+
 ### Inimigos e bordas da fase
 - Inimigos que entram pela borda nascem em `edgeX(side)`, sempre **sobre o chão** (`levelW` limita). Quem cair fora do mapa é removido e conta como baixa (`onEnemyKilled`), para nunca travar a contagem do acampamento.
 - `Miner.die()`/`Logger.die()` chamam `scene.onEnemyKilled(this)`; chefes podem implementar `onEnemyKilled`.
@@ -105,7 +111,7 @@ tools/source_sheets/       as 8 folhas de arte originais
   - Dano de tiros/bombas, pisca branco (`setTintFill(0xffffff)` 80 ms), barra vermelha na `UIScene`.
   - Estado 1 (HP > 500): jatos de rejeito em parábola + baldes de mercúrio rolantes.
   - Estado 2 (HP ≤ 500): frame avariado + tinta avermelhada, cadência maior, fumaça/explosões contínuas.
-  - Derrota: 8 explosões a cada 250 ms, limpa inimigos, banner "ÁREA EMBARGADA! MISSION COMPLETE!", fanfarra sintetizada e cartão do rio restaurado (`bg_restored`).
+  - Derrota: 8 explosões a cada 250 ms, limpa inimigos, banner "VOCÊ SALVOU O RIO!" com as conquistas, fanfarra sintetizada e cartão do rio restaurado (`bg_restored`).
 
 ### Missão 4 — Chefão do Garimpo
 - Rio com floresta em chamas ao fundo (`bg_m4`, só o trecho do painel sem a draga pintada), balsas e plataformas, 4 gaiolas, madeireiros e garimpeiros misturados, apoio aéreo GEF.

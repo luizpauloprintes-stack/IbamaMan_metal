@@ -34,6 +34,7 @@ export default class GameScene extends Phaser.Scene {
     this.canRestart = false;
     this.showRestored = false;
     this.won = false;
+    this.rescued = 0; // animais libertados nesta missão
     this.gameOverAt = 0;
     this.waveIndex = 0;
     this.heliDone = false;
@@ -504,16 +505,21 @@ export default class GameScene extends Phaser.Scene {
     this.addScore(BOSS_SCORE, boss.x - 60, boss.y - (boss.displayHeight + 40), B.defeatText);
     this.player.celebrate();
     Sfx.victory();
-    this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', '');
+    // conquistas da missão: título grande + uma conquista por vez no subtítulo
+    const V = this.level.victory;
+    const lines = [...V.lines, `Animais libertados: ${this.rescued}`];
+    this.showBanner(V.title, 0, '#ffd23f', '');
+    lines.forEach((ln, i) => this.time.delayedCall(500 + i * 1100, () => this.showBanner(V.title, 0, '#ffd23f', `★ ${ln}`)));
+    const promptAt = 500 + lines.length * 1100 + 300;
     this.time.delayedCall(1800, () => { this.showRestored = true; });
-    this.time.delayedCall(4000, () => {
+    this.time.delayedCall(promptAt, () => {
       this.canRestart = true;
       this.won = true;
       const next = this.nextMission();
       const allDone = CAMPAIGN.length === MISSIONS.length;
       const sub = next ? `Toque em FIRE para a Missão ${next}`
         : allDone ? 'CAMPANHA CONCLUÍDA! Toque em FIRE para jogar de novo' : 'FIM DA DEMO — toque em FIRE para recomeçar';
-      this.showBanner('ÁREA EMBARGADA!\nMISSION COMPLETE!', 0, '#ffd23f', sub);
+      this.showBanner(V.title, 0, '#ffd23f', sub);
     });
   }
 
@@ -645,7 +651,7 @@ export default class GameScene extends Phaser.Scene {
   restartGame() {
     const next = this.won ? this.nextMission() : null;
     if (next) this.scene.restart({ mission: next, score: this.score, lives: this.player.lives });
-    else if (this.won) this.scene.restart({ mission: CAMPAIGN[0] });
+    else if (this.won) { this.scene.stop('UIScene'); this.scene.start('TitleScene'); } // campanha concluída: volta à capa
     else this.scene.restart({ mission: this.missionId });
   }
 }
