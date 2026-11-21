@@ -1,6 +1,6 @@
 # IbamaMan: Guardião da Amazônia — guia do projeto
 
-Jogo de ação 2D (run-and-gun arcade). Nome do app: **IbamaMan: Guardião da Amazônia** — não usar "arcade clássico" nem "Slug" em textos visíveis. O protagonista **IbamaMan** (fiscal do Ibama / G.E.F.) combate o garimpo ilegal e o desmatamento, liberta animais silvestres e embarga áreas.
+Jogo de ação 2D (run-and-gun arcade). Nome do app: **IbamaMan: Guardião da Amazônia** — não citar outros jogos (ex.: o nome do jogo arcade que inspirou o projeto) nem "Slug" em textos visíveis. O protagonista **IbamaMan** (fiscal do Ibama / G.E.F.) combate o garimpo ilegal e o desmatamento, liberta animais silvestres e embarga áreas.
 
 **Stack:** Vite + JavaScript (ES modules) + Phaser 3 (física Arcade) → empacotado como APK Android via Capacitor (paisagem travada).
 
@@ -31,7 +31,8 @@ src/config/
   levels.js                layout de cada fase jogável (fundo, terreno, plataformas, inimigos, ondas, chefe, cartão de vitória)
   enemies.js               balanceamento de garimpeiro, madeireiro, Barão, acampamento (CAMP), Balsa-Fortaleza (FORTRESS) e revanche (BARON_FINAL)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
-  controls.js              layout/transparência dos controles touch (direcional flutuante e botões)
+  controls.js              controles touch: direcional flutuante, área de gestos, tiro automático e botão AUTO
+  links.js                 link da PEC 13/2022 (consulta pública do Senado) e openExternal() (abre no navegador do celular)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
 src/gfx/Organic.js         movimento "vivo" por cima dos quadros: respiração, inclinação ao andar, squash/stretch, recuo e tremor de motor (fase própria por instância)
 src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsulas, faíscas, estilhaços (teto de 140)
@@ -73,7 +74,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 ### Fluxo entre cenas
 - `BootScene` → `TitleScene` (capa) → `GameScene`; a `GameScene` lança a `UIScene` por cima. Depois da Missão 4, FIRE volta à capa.
 - **Controles:** a `UIScene` escreve em `registry.get('controls')` (`left/right/crouch/jump/fire/bomb` + bordas `jumpQueued`, `bombQueued`, `firePressed`). A `GameScene` lê e consome as bordas.
-- **Controles touch:** direcional *flutuante* (nasce onde o polegar toca na metade esquerda e some ao soltar); botões FIRE/JUMP/BOMB pequenos e translúcidos no canto direito, que quase somem quando o IbamaMan passa por trás. Só aparecem em aparelhos com toque. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
+- **Controles touch (sem botões de ação):** metade esquerda = direcional *flutuante* (nasce sob o polegar; para cima = pular, para baixo = agachar). Metade direita = **área de gestos**: toque rápido = pular, arrastar ↑ = bomba, segurar parado = atirar. **Tiro automático** (ligado por padrão no celular, `GameScene.autoTarget`): mira inimigos/gaiolas/tambores/chefe visíveis à altura da arma e atira quando estão à frente; vira o IbamaMan para o alvo se ele estiver parado. O botão "TIRO AUTO" no canto superior direito liga/desliga (salvo no aparelho). Qualquer toque novo serve como "continuar" nas telas de vitória/game over. Parâmetros em `src/config/controls.js` (`STICK`, `GESTURE`, `AUTO_FIRE`). A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
 - **HUD:** a `UIScene` faz *polling* de `GameScene.getHudState()` a cada quadro (evita listeners órfãos ao reiniciar a cena).
 
 ### Paisagem / Android
@@ -114,6 +115,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Callbacks com atraso (`delayedCall`) em inimigos sempre checam `this.active` (o inimigo pode ter sido removido).
 
 ### Tela de vitória
+- Ao fim de **cada** missão, depois das conquistas, o cartão do cenário dá lugar ao cartão **"POR QUE APOIAR A PEC 13/2022?"** com um argumento diferente por missão (`victory.pec`) e o botão "APOIAR A PEC 13/2022" (consulta pública do Senado, `src/config/links.js`). Os argumentos seguem o texto da PEC (instituição permanente na Constituição, autonomia técnica/financeira/orçamentária, dirigentes por critérios técnicos com mandato de 4 anos e aprovação do Senado, carreiras típicas de Estado); a justificação oficial não fala literalmente em extinção ou em nomeações de fora, por isso os textos tratam disso como consequência do texto.
 - Cada missão tem em `levels.js` → `victory`: `title` (ex.: "VOCÊ SALVOU A FLORESTA!"), `lines` (conquistas mostradas uma a uma com ★) e o cartão (`key`, `caption`). A última conquista é sempre "Animais libertados: N" (contado em `scene.rescued`).
 
 ### Inimigos e bordas da fase
@@ -134,7 +136,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Chefe em **dois estágios**:
   1. **Balsa-Fortaleza** (`MegaDraga` com `FORTRESS`: 1300 HP, tinta de aço) com o Barão em pé no convés (sprite `rider`, só visual; fica com o rosto vermelho quando a fortaleza entra no estado 2).
   2. Ao afundar a fortaleza, o Barão salta na água (`startBaronStage`) e começa a **revanche** (`Baron` com `BARON_FINAL`: 520 HP), com a barra trocando para "BARÃO DO GARIMPO".
-- Derrota do Barão: "BARÃO PRESO!", cartão "A AMAZÔNIA AGRADECE" e "CAMPANHA CONCLUÍDA!".
+- Derrota do Barão: "BARÃO PRESO!", "CAMPANHA CONCLUÍDA!" e o cartão da PEC com o botão "APOIAR A PEC 13/2022", que abre a consulta pública oficial do Senado (e-Cidadania) — texto e URL em `src/config/links.js`. No PC, tecla P abre o link.
 
 ## Armas (`src/config/weapons.js`)
 

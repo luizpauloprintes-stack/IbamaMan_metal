@@ -69,7 +69,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       if (this.onGround) { this.setVelocityY(JUMP_VY); Sfx.jump(); }
     }
 
-    if (c.fire && time >= this.nextFire) this.fire(time);
+    // tiro automático: vira para o alvo mais próximo (se não estiver andando) e atira quando ele está à frente
+    let firing = c.fire;
+    if (!firing && c.autoFire && !this.crouching) {
+      const t = this.scene.autoTarget?.(this);
+      if (t) {
+        if (dir === 0) { this.facing = Math.sign(t.x - this.x) || this.facing; this.setFlipX(this.facing < 0); }
+        firing = Math.sign(t.x - this.x) === this.facing;
+      }
+    }
+    this.autoFiring = firing && !c.fire;
+    if (firing && time >= this.nextFire) this.fire(time);
     if (c.bombQueued) { c.bombQueued = false; this.throwBomb(time); }
 
     // poeira nas botas: ao correr no chão e ao aterrissar
@@ -78,7 +88,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     else if (grounded && Math.abs(this.body.velocity.x) > 150 && time >= this.nextDust) { this.nextDust = time + 140; this.scene.fx.dust(this.x - this.facing * 8, this.y, 1, this.facing); }
     this.wasOnGround = grounded;
 
-    this.updateAnim(time, dir, c.fire);
+    this.updateAnim(time, dir, firing);
     if (this.muzzle.visible && time > this.muzzleUntil) this.muzzle.setVisible(false);
   }
 

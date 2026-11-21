@@ -4,6 +4,7 @@ import { WEAPONS, HG_BARREL } from '../config/weapons.js';
 import { MISSIONS, CAMPAIGN } from '../config/missions.js';
 import { LEVELS, bossLockX, bossTriggerX, BOSS_SCORE } from '../config/levels.js';
 import { FORTRESS, BARON_FINAL } from '../config/enemies.js';
+import { AUTO_FIRE } from '../config/controls.js';
 import { FULL_BACKGROUND, REAL_KEYS, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
 import Miner from '../objects/Miner.js';
@@ -34,6 +35,7 @@ export default class GameScene extends Phaser.Scene {
     this.canRestart = false;
     this.showRestored = false;
     this.won = false;
+    this.showPec = false;
     this.rescued = 0; // animais libertados nesta missão
     this.gameOverAt = 0;
     this.waveIndex = 0;
@@ -187,7 +189,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.player.dead && !this.gameOverAt) {
       this.gameOverAt = time;
       this.showBanner('GAME OVER', 0, '#ff4d4d', '');
-      this.time.delayedCall(1500, () => { this.canRestart = true; this.showBanner('GAME OVER', 0, '#ff4d4d', 'Toque em FIRE para tentar de novo'); });
+      this.time.delayedCall(1500, () => { this.canRestart = true; this.showBanner('GAME OVER', 0, '#ff4d4d', 'Toque na tela para tentar de novo'); });
     }
 
     this.updateCamera();
@@ -258,6 +260,29 @@ export default class GameScene extends Phaser.Scene {
         this.spawnEnemyAt(w.type || 'miner', this.edgeX(left ? 'left' : 'right'), GROUND_Y - 40);
       });
     }
+  }
+
+  // Alvo do tiro automático: inimigo, chefe, gaiola ou tambor visível, à altura da arma e dentro do alcance.
+  autoTarget(player) {
+    const v = this.cameras.main.worldView;
+    const gy = player.y - (player.crouching ? 26 : 34);
+    let best = null; let bestD = Infinity;
+    const consider = (t) => {
+      if (!t || !t.active || !t.isTarget) return;
+      const r = t.getBounds();
+      if (r.right < v.left || r.left > v.right) return;
+      const nx = Phaser.Math.Clamp(player.x, r.left, r.right);
+      const dx = Math.abs(nx - player.x);
+      const dy = gy < r.top ? r.top - gy : gy > r.bottom ? gy - r.bottom : 0;
+      if (dx > AUTO_FIRE.rangeX || dy > AUTO_FIRE.rangeY) return;
+      const d = dx + dy * 2;
+      if (d < bestD) { bestD = d; best = { x: r.centerX, y: r.centerY }; }
+    };
+    this.enemies.getChildren().forEach(consider);
+    this.cages.getChildren().forEach(consider);
+    this.barrels.getChildren().forEach(consider);
+    consider(this.boss);
+    return best;
   }
 
   // trecho de rio raso nessa posição? (usado pelo peixe-boi libertado para mergulhar)
@@ -522,8 +547,9 @@ export default class GameScene extends Phaser.Scene {
       this.won = true;
       const next = this.nextMission();
       const allDone = CAMPAIGN.length === MISSIONS.length;
-      const sub = next ? `Toque em FIRE para a Missão ${next}`
-        : allDone ? 'CAMPANHA CONCLUÍDA! Toque em FIRE para jogar de novo' : 'FIM DA DEMO — toque em FIRE para recomeçar';
+      this.showPec = true; // fim de cada missão: por que apoiar a PEC 13/2022 + botão para a consulta pública
+      const sub = next ? `Toque na tela para a Missão ${next}`
+        : allDone ? 'CAMPANHA CONCLUÍDA! Toque na tela para jogar de novo' : 'FIM DA DEMO — toque na tela para recomeçar';
       this.showBanner(V.title, 0, '#ffd23f', sub);
     });
   }
@@ -647,7 +673,8 @@ export default class GameScene extends Phaser.Scene {
       lives: p.lives,
       bombs: p.bombs,
       boss: this.bossState,
-      restored: this.showRestored ? this.level.victory : null,
+      restored: this.showRestored && !this.showPec ? this.level.victory : null,
+      pec: this.showPec ? (this.level.victory.pec || true) : null,
       banner
     };
   }

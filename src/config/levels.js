@@ -34,6 +34,7 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_m1', caption: 'A FLORESTA FICA DE PÉ',
+      pec: 'Quem fiscaliza o desmatamento não pode depender de quem está no governo. Na Constituição, como instituição permanente de Estado, o Ibama não poderia ser extinto nem esvaziado por decreto.',
       title: 'VOCÊ SALVOU\nA FLORESTA!',
       lines: ['Prendeu os criminosos ambientais', 'Destruiu as motosserras do Barão', 'Parou o desmatamento']
     }
@@ -75,6 +76,7 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_restored', caption: 'O IGARAPÉ VAI SE RECUPERAR',
+      pec: 'Com autonomia técnica, financeira e orçamentária garantida na Constituição, a fiscalização do garimpo não pararia por falta de verba ou por ordem política.',
       title: 'VOCÊ ACABOU\nCOM O GARIMPO!',
       lines: ['Explodiu as máquinas do garimpo', 'Tirou o mercúrio do igarapé', 'Prendeu os garimpeiros ilegais']
     }
@@ -117,6 +119,7 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_restored', caption: 'O RIO VOLTOU A FICAR LIMPO',
+      pec: 'Pela PEC, os dirigentes do Ibama e do ICMBio seriam escolhidos por critérios técnicos, com mandato de 4 anos e aprovação do Senado. Menos espaço para indicações sem preparo.',
       title: 'VOCÊ SALVOU\nO RIO!',
       lines: ['Explodiu a Mega Draga', 'Acabou com o mercúrio na água', 'Os peixes vão voltar']
     }
@@ -158,6 +161,7 @@ LEVELS[4] = {
   },
   victory: {
     key: 'bg_restored', caption: 'A AMAZÔNIA AGRADECE',
+      pec: 'Servidores com carreira típica de Estado têm mais segurança para enfrentar o crime ambiental. Proteja quem protege a Amazônia: apoie a PEC 13/2022.',
     title: 'VOCÊ PRENDEU O\nCHEFÃO DO GARIMPO!',
     lines: ['Afundou a Balsa-Fortaleza', 'Prendeu os criminosos ambientais', 'Salvou os rios e a floresta']
   }
