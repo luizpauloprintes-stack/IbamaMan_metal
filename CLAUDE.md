@@ -31,7 +31,7 @@ src/config/
   levels.js                layout de cada fase jogável (fundo, terreno, plataformas, inimigos, ondas, chefe, cartão de vitória)
   enemies.js               balanceamento de garimpeiro, madeireiro, Barão, acampamento (CAMP), Balsa-Fortaleza (FORTRESS) e revanche (BARON_FINAL)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
-  controls.js              controles touch: direcional flutuante, área de gestos, tiro automático e botão AUTO
+  controls.js              controles touch: direcional flutuante, botões PULAR/TIRO/BOMBA, tiro automático e botão AUTO
   links.js                 link da PEC 13/2022 (consulta pública do Senado) e openExternal() (abre no navegador do celular)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
 src/gfx/Organic.js         movimento "vivo" por cima dos quadros: respiração, inclinação ao andar, squash/stretch, recuo e tremor de motor (fase própria por instância)
@@ -74,7 +74,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 ### Fluxo entre cenas
 - `BootScene` → `TitleScene` (capa) → `GameScene`; a `GameScene` lança a `UIScene` por cima. Depois da Missão 4, FIRE volta à capa.
 - **Controles:** a `UIScene` escreve em `registry.get('controls')` (`left/right/crouch/jump/fire/bomb` + bordas `jumpQueued`, `bombQueued`, `firePressed`). A `GameScene` lê e consome as bordas.
-- **Controles touch (sem botões de ação):** metade esquerda = direcional *flutuante* (nasce sob o polegar; para cima = pular, para baixo = agachar). Metade direita = **área de gestos**: toque rápido = pular, arrastar ↑ = bomba, segurar parado = atirar. **Tiro automático** (ligado por padrão no celular, `GameScene.autoTarget`): mira inimigos/gaiolas/tambores/chefe visíveis à altura da arma e atira quando estão à frente; vira o IbamaMan para o alvo se ele estiver parado. O botão "TIRO AUTO" no canto superior direito liga/desliga (salvo no aparelho). Qualquer toque novo serve como "continuar" nas telas de vitória/game over. Parâmetros em `src/config/controls.js` (`STICK`, `GESTURE`, `AUTO_FIRE`). A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
+- **Controles touch:** metade esquerda = direcional *flutuante* (nasce sob o polegar; empurrar bem para cima também pula, para baixo agacha). Canto direito = **três botões separados em arco** (`BUTTONS` em `src/config/controls.js`): **PULAR** (maior, mais perto do polegar), **TIRO** (segurar) e **BOMBA** (acima). O toque vai para o botão mais próximo dentro de `BUTTON_ZONE` (sem ponto morto entre eles; o dedo pode deslizar de um para outro) e os botões ficam quase transparentes quando o IbamaMan passa por trás. **Tiro automático** (ligado por padrão no celular, `GameScene.autoTarget`): mira inimigos/gaiolas/tambores/chefe visíveis à altura da arma e atira quando estão à frente; vira o IbamaMan para o alvo se ele estiver parado. O botão "TIRO AUTO" no canto superior direito liga/desliga (salvo no aparelho). Qualquer toque novo serve como "continuar" nas telas de vitória/game over. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
 - **HUD:** a `UIScene` faz *polling* de `GameScene.getHudState()` a cada quadro (evita listeners órfãos ao reiniciar a cena).
 
 ### Paisagem / Android

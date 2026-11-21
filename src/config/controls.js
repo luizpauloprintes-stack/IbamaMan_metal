@@ -6,17 +6,19 @@ export const STICK = {
   knob: 22,
   deadX: 14,          // folga horizontal antes de andar
   crouchY: 26,        // arrastar para baixo = agachar
-  jumpY: -34,         // empurrar para cima = pular
+  jumpY: -46,         // empurrar bem para cima = pular (atalho)
   hint: { x: 70, y: 392, r: 34 }
 };
 
-// Metade direita: área de gestos
-export const GESTURE = {
-  tapMs: 230,         // toque rápido = pular
-  holdMs: 230,        // segurar parado = atirar (enquanto segurar)
-  swipeUp: 38,        // arrastar para cima (px lógicos) = bomba
-  moveTol: 16         // quanto o dedo pode mexer e ainda contar como toque/segurar
-};
+// Botões de ação separados, em arco no canto direito (padrão dos jogos de ação mobile).
+// O toque vai para o botão MAIS PRÓXIMO dentro da zona de botões (sem ponto morto entre eles).
+export const BUTTONS = [
+  { id: 'jump', label: 'PULAR', x: 728, y: 386, r: 42, color: 0x2f74c0 },  // principal: mais perto do polegar
+  { id: 'fire', label: 'TIRO', x: 626, y: 408, r: 34, color: 0xc0392b },
+  { id: 'bomb', label: 'BOMBA', x: 742, y: 282, r: 30, color: 0xe67e22 }
+];
+export const BUTTON_ZONE = { minX: 560, minY: 230, maxDist: 95 }; // fora disso o toque não aciona botão
+export const BUTTON_ALPHA = { idle: 0.38, pressed: 0.8, behindPlayer: 0.14 };
 
 // Tiro automático: atira sozinho quando há alvo à frente
 export const AUTO_FIRE = {

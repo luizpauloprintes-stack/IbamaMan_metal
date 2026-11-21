@@ -6,7 +6,7 @@ import { unlockAudio } from '../audio/Sfx.js';
 // a GameScene lê esse objeto a cada quadro. Flags *Queued/*Pressed são "bordas" consumidas pela GameScene.
 // Direcional FLUTUANTE: aparece onde o polegar toca na metade esquerda e some ao soltar,
 // para não ficar desenhado por cima do IbamaMan.
-import { STICK, GESTURE, AUTO_FIRE, AUTO_BTN } from '../config/controls.js';
+import { STICK, BUTTONS, BUTTON_ZONE, BUTTON_ALPHA, AUTO_FIRE, AUTO_BTN } from '../config/controls.js';
 import { PEC, openExternal } from '../config/links.js';
 
 const TXT = { fontFamily: 'monospace', fontStyle: 'bold', stroke: '#000', strokeThickness: 4, resolution: RENDER_ZOOM };
@@ -102,11 +102,14 @@ export default class UIScene extends Phaser.Scene {
     this.autoTxt = this.add.text(b.x, b.y, '', { ...TXT, fontSize: '11px', color: '#9cff57', strokeThickness: 3 }).setOrigin(0.5);
     this.refreshAutoBtn();
 
-    // dica de gestos (some sozinha depois de alguns segundos)
-    this.hint = this.add.text(GAME_W * 0.75, 300, 'TOQUE: PULAR\nARRASTE ↑: BOMBA\nSEGURE: ATIRAR',
-      { ...TXT, fontSize: '12px', color: '#ffffff', align: 'center', strokeThickness: 3 }).setOrigin(0.5).setAlpha(0.75);
-    this.time.delayedCall(6000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 800 }));
-    if (!this.touchEnabled) { this.pad.setVisible(false); this.hint.setVisible(false); }
+    // botões de ação (desenhados em drawControls)
+    this.btnGfx = this.add.graphics();
+    this.btnTxt = {};
+    BUTTONS.forEach((bt) => {
+      this.btnTxt[bt.id] = this.add.text(bt.x, bt.y, bt.label, { ...TXT, fontSize: bt.id === 'jump' ? '14px' : '12px', color: '#ffffff', strokeThickness: 3 }).setOrigin(0.5);
+    });
+    this.hint = this.add.text(0, 0, '').setVisible(false);
+    if (!this.touchEnabled) { this.pad.setVisible(false); this.btnGfx.setVisible(false); Object.values(this.btnTxt).forEach((t) => t.setVisible(false)); }
   }
 
   refreshAutoBtn() {
@@ -133,7 +136,7 @@ export default class UIScene extends Phaser.Scene {
 
   // Lê os dedos: esquerda = direcional flutuante; direita = gestos (toque, segurar, arrastar ↑).
   readTouch(time) {
-    const s = { left: false, right: false, crouch: false, fire: false, jumpTap: false, bombTap: false, fireTap: false };
+    const s = { left: false, right: false, crouch: false, fire: false, jumpTap: false, bombTap: false, fireTap: false, held: {} };
     const st = this.stick;
     const pointers = this.input.manager.pointers;
     const live = new Set();
@@ -163,26 +166,33 @@ export default class UIScene extends Phaser.Scene {
           s.fireTap = true;
           return;
         }
-        g = { x0: p.x, y0: p.y, x: p.x, y: p.y, t0: time, moved: false, bombed: false, holding: false };
+        g = { btn: null };
         this.gestures.set(p.id, g);
         s.fireTap = true; // qualquer toque novo serve para "continuar" nas telas de vitória/game over
       }
       if (g.ui) return;
-      g.x = p.x; g.y = p.y;
-      const dx = p.x - g.x0; const dy = p.y - g.y0;
-      if (Math.hypot(dx, dy) > GESTURE.moveTol) g.moved = true;
-      if (!g.bombed && dy < -GESTURE.swipeUp && Math.abs(dy) > Math.abs(dx)) { g.bombed = true; s.bombTap = true; this.flash(p.x, p.y, 0xe67e22); }
-      if (!g.moved && time - g.t0 >= GESTURE.holdMs) { g.holding = true; s.fire = true; }
+      // botão mais próximo (o dedo pode deslizar de um botão para o outro)
+      const b = this.nearestButton(p);
+      if (b && b.id !== g.btn) {
+        if (b.id === 'jump') s.jumpTap = true;
+        if (b.id === 'bomb') s.bombTap = true;
+      }
+      g.btn = b ? b.id : null;
+      if (g.btn === 'fire') s.fire = true;
+      if (g.btn) s.held[g.btn] = true;
     });
 
     // dedos que saíram da tela
     if (st.pointerId !== null && !live.has(st.pointerId)) st.pointerId = null;
-    this.gestures.forEach((g, id) => {
-      if (live.has(id)) return;
-      if (!g.ui && !g.moved && !g.bombed && !g.holding && time - g.t0 < GESTURE.tapMs) { s.jumpTap = true; this.flash(g.x, g.y, 0x2f74c0); }
-      this.gestures.delete(id);
-    });
+    this.gestures.forEach((g, id) => { if (!live.has(id)) this.gestures.delete(id); });
     return s;
+  }
+
+  nearestButton(p) {
+    if (p.x < BUTTON_ZONE.minX || p.y < BUTTON_ZONE.minY) return null;
+    let best = null; let bestD = Infinity;
+    BUTTONS.forEach((b) => { const d = Math.hypot(p.x - b.x, p.y - b.y) - b.r; if (d < bestD) { best = b; bestD = d; } });
+    return bestD <= BUTTON_ZONE.maxDist ? best : null;
   }
 
   // anel rápido onde o gesto foi reconhecido (retorno visual sem botão fixo)
@@ -207,6 +217,7 @@ export default class UIScene extends Phaser.Scene {
     c.fire = t.fire || k.Z.isDown || k.J.isDown;
     c.bomb = k.X.isDown || k.K.isDown;
 
+    this.held = t.held;
     this.drawControls(c);
     this.updateHud();
   }
@@ -224,6 +235,21 @@ export default class UIScene extends Phaser.Scene {
       g.lineStyle(2, 0xffffff, 0.14).strokeCircle(h.x, h.y, h.r);
       g.fillStyle(0xffffff, 0.14).fillCircle(h.x, h.y, 8);
     }
+    // botões: ficam bem mais apagados quando o IbamaMan passa por trás
+    const gs = this.scene.get('GameScene');
+    const pl = gs && gs.player;
+    const px = pl && gs.sys.isActive() ? pl.x - gs.viewLeft : -999;
+    const py = pl ? pl.y - 32 : -999;
+    const bg = this.btnGfx; bg.clear();
+    BUTTONS.forEach((b) => {
+      const on = !!(this.held && this.held[b.id]);
+      const behind = Math.abs(px - b.x) < b.r + 18 && Math.abs(py - b.y) < b.r + 34;
+      const a = on ? BUTTON_ALPHA.pressed : behind ? BUTTON_ALPHA.behindPlayer : BUTTON_ALPHA.idle;
+      const r = on ? b.r * 0.92 : b.r;
+      bg.fillStyle(b.color, a).fillCircle(b.x, b.y, r);
+      bg.lineStyle(3, 0xffffff, Math.min(1, a + 0.25)).strokeCircle(b.x, b.y, r);
+      this.btnTxt[b.id].setAlpha(Math.min(1, a * 2.2));
+    });
   }
 
   updateHud() {
