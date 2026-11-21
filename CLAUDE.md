@@ -1,6 +1,6 @@
-# IbamaMan: Garimpo Slug — guia do projeto
+# IbamaMan: Guardião da Amazônia — guia do projeto
 
-Run-and-gun 2D arcade no estilo Metal Slug. O protagonista **IbamaMan** (fiscal do Ibama / G.E.F.) combate o garimpo ilegal e o desmatamento, liberta animais silvestres e embarga áreas.
+Jogo de ação 2D (run-and-gun arcade). Nome do app: **IbamaMan: Guardião da Amazônia** — não usar "arcade clássico" nem "Slug" em textos visíveis. O protagonista **IbamaMan** (fiscal do Ibama / G.E.F.) combate o garimpo ilegal e o desmatamento, liberta animais silvestres e embarga áreas.
 
 **Stack:** Vite + JavaScript (ES modules) + Phaser 3 (física Arcade) → empacotado como APK Android via Capacitor (paisagem travada).
 
@@ -15,13 +15,13 @@ Run-and-gun 2D arcade no estilo Metal Slug. O protagonista **IbamaMan** (fiscal 
 | `python3 tools/build_sheets.py && python3 tools/build_motion.py && python3 tools/build_cycles.py && python3 tools/build_icons.py` | regenera sprites, ciclos de movimento (rig + folhas desenhadas) e ícone/capa — nesta ordem |
 | `npm run android:apk` | gera `android/app/build/outputs/apk/debug/app-debug.apk` (precisa Android SDK + JDK 21) |
 
-O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push na `main` e publica uma **Release** com o arquivo `IbamaMan-Garimpo-Slug.apk`.
+O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push na `main` e publica uma **Release** com o arquivo `IbamaMan-Guardiao-da-Amazonia.apk`.
 
 ## Arquitetura
 
 ```
 index.html                 canvas em tela cheia, touch-action: none
-capacitor.config.json      appId, appName, webDir: "dist"
+capacitor.config.json      appId (com.luizpaulo.ibamaman.garimposlug — identificador interno, mantido para o APK atualizar por cima), appName, webDir: "dist"
 vite.config.js             base: './' (obrigatório para o WebView do Capacitor)
 src/main.js                Phaser.Game (lógico 800x450, canvas 1600x900), pixelArt, Scale.FIT + CENTER_BOTH, Arcade gravidade y=900
 src/config/
@@ -150,8 +150,8 @@ Com `ammo <= 0` a arma volta para `PISTOL`.
 
 ## Sprites (arte real + placeholders)
 
-A arte vem das 8 folhas da *Curadoria de Sprites IbamaMan: Garimpo Slug*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria), e das artes em alta resolução de `tools/source_sheets/hero_v2/` (IbamaMan correndo, atirando parado, em pé, agachado e pulando; garimpeiro com jato, madeireiro, agente GEF, Barão do Garimpo, helicóptero GEF, Mega Draga e a folha de itens HD com gaiolas/animais, tambores, caixas H/R/F, kit médico, açaí, abacaxi e explosões), que têm prioridade sobre as folhas originais.
-`tools/build_sheets.py` remove o fundo branco e o halo claro das bordas, recorta cada quadro em **2x** (`RES=2`), desenha o contorno escuro de 1px lógico (#141812, estilo Metal Slug; não em explosões), alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
+A arte vem das 8 folhas da *Curadoria de Sprites do IbamaMan*, guardadas em `tools/source_sheets/` (01_elenco_personagens … 08_cenario_missao_4_vitoria), e das artes em alta resolução de `tools/source_sheets/hero_v2/` (IbamaMan correndo, atirando parado, em pé, agachado e pulando; garimpeiro com jato, madeireiro, agente GEF, Barão do Garimpo, helicóptero GEF, Mega Draga e a folha de itens HD com gaiolas/animais, tambores, caixas H/R/F, kit médico, açaí, abacaxi e explosões), que têm prioridade sobre as folhas originais.
+`tools/build_sheets.py` remove o fundo branco e o halo claro das bordas, recorta cada quadro em **2x** (`RES=2`), desenha o contorno escuro de 1px lógico (#141812, estilo arcade; não em explosões), alinha os pés na base (`origin(0.5, 1)`) e grava os spritesheets + `manifest.json` em `public/assets/sprites/`:
 
 ```bash
 pip install opencv-python-headless scipy numpy

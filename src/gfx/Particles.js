@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { DEPTH } from '../config/constants.js';
 
-// Efeitos de partículas leves (sprites + tweens), no espírito de Metal Slug.
+// Efeitos de partículas leves (sprites + tweens), no estilo dos arcades clássicos.
 // Todos têm teto de quantidade para não pesar em celulares.
 const MAX_LIVE = 140;
 export const DEBRIS = { wood: 0x8c5a2b, metal: 0x8a9399, mud: 0x6b4a22, hg: 0x4cff4c, water: 0x9fd3e6 };

@@ -1,8 +1,8 @@
 {
-  "name": "ibamaman-garimpo-slug",
+  "name": "ibamaman-guardiao-da-amazonia",
   "private": true,
   "version": "0.1.0",
-  "description": "IbamaMan: Garimpo Slug — run-and-gun 2D arcade (estilo Metal Slug) em Phaser 3, empacotado para Android via Capacitor (paisagem).",
+  "description": "IbamaMan: Guardião da Amazônia — jogo de ação 2D (run-and-gun arcade) em Phaser 3, empacotado para Android via Capacitor (paisagem).",
   "type": "module",
   "scripts": {
     "dev": "vite",

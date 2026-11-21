@@ -195,11 +195,6 @@
   "res": 2
  },
  {
-  "key": "title_cover",
-  "file": "title_cover.jpg",
-  "res": 2
- },
- {
   "key": "boss_baron_walk",
   "file": "boss_baron_walk.png",
   "frameWidth": 192,
@@ -253,6 +248,11 @@
   "file": "animal_manatee.png",
   "frameWidth": 128,
   "frameHeight": 128,
+  "res": 2
+ },
+ {
+  "key": "title_cover",
+  "file": "title_cover.jpg",
   "res": 2
  }
 ]

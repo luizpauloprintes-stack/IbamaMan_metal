@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">IbamaMan: Garimpo Slug</string>
-    <string name="title_activity_main">IbamaMan: Garimpo Slug</string>
+    <string name="app_name">IbamaMan: Guardião da Amazônia</string>
+    <string name="title_activity_main">IbamaMan: Guardião da Amazônia</string>
     <string name="package_name">com.luizpaulo.ibamaman.garimposlug</string>
     <string name="custom_url_scheme">com.luizpaulo.ibamaman.garimposlug</string>
 </resources>

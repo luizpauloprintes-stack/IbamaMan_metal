@@ -61,7 +61,7 @@ def despill(c):
 RES=2   # resolução das texturas em relação às unidades lógicas do jogo (o jogo renderiza com zoom 2)
 OUTLINE=(18,24,20)  # BGR de #141812
 def outline(img):
-    """Contorno externo de 1px escuro, como nos sprites de Metal Slug."""
+    """Contorno externo de 1px escuro, como nos sprites de arcade clássico."""
     img=np.pad(img,((RES,RES),(RES,RES),(0,0)))
     m=img[:,:,3]>0
     k=2*RES+1-2   # contorno de 1px lógico (= RES px na textura)

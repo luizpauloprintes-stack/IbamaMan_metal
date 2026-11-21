@@ -46,7 +46,7 @@ def cutout(path, box=None, erase=()):
 
 
 def outlined(img, px):
-    """Contorno escuro externo (estilo Metal Slug)."""
+    """Contorno escuro externo (estilo arcade)."""
     a = np.array(img.split()[-1])
     pad = px + 1
     canvas = Image.new("RGBA", (img.width + 2 * pad, img.height + 2 * pad), (0, 0, 0, 0))
@@ -170,7 +170,7 @@ def cover(w=1600, h=900, with_hint=False):
 
     dr = ImageDraw.Draw(img)
     text(dr, (w * 0.62, h * 0.13), "IBAMAMAN", int(h * 0.17), (255, 210, 63), (20, 24, 18), sw=int(h * 0.016))
-    text(dr, (w * 0.62, h * 0.265), "GARIMPO SLUG", int(h * 0.085), (255, 138, 31), (20, 24, 18), sw=int(h * 0.011))
+    text(dr, (w * 0.62, h * 0.265), "GUARDIÃO DA AMAZÔNIA", int(h * 0.062), (255, 138, 31), (20, 24, 18), sw=int(h * 0.011))
     text(dr, (w * 0.62, h * 0.345), "G.E.F. • FISCALIZAÇÃO AMBIENTAL", int(h * 0.034), (235, 235, 225), (20, 24, 18), sw=3)
     if with_hint:
         text(dr, (w * 0.62, h * 0.93), "carregando…", int(h * 0.035), (235, 235, 225), (20, 24, 18), sw=3)
@@ -207,6 +207,6 @@ for folder in sorted(os.listdir(RES)):
         bg.paste(ic, ((W - ic.width) // 2, int(Hh * 0.28)), round_mask(ic.width, 0.18))
         dr = ImageDraw.Draw(bg)
         text(dr, (W / 2, Hh * 0.72), "IBAMAMAN", int(W * 0.13), (255, 210, 63), (20, 24, 18))
-        text(dr, (W / 2, Hh * 0.80), "GARIMPO SLUG", int(W * 0.07), (255, 138, 31), (20, 24, 18))
+        text(dr, (W / 2, Hh * 0.80), "GUARDIÃO DA AMAZÔNIA", int(W * 0.05), (255, 138, 31), (20, 24, 18))
         bg.convert("RGB").save(p)
 print("ícones, splash e capa gerados")

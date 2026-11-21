@@ -1,9 +1,9 @@
-# IbamaMan: Garimpo Slug
+# IbamaMan: Guardião da Amazônia
 
-Jogo run-and-gun 2D no estilo Metal Slug: o fiscal **IbamaMan** enfrenta o garimpo ilegal no rio, liberta animais silvestres e embarga a **Mega Draga**.
+Jogo de ação 2D (run-and-gun arcade): o fiscal **IbamaMan** enfrenta o garimpo ilegal no rio, liberta animais silvestres e embarga a **Mega Draga**.
 
 ## Baixar o APK
-Vá em **Releases** (barra lateral do repositório) e baixe `IbamaMan-Garimpo-Slug.apk` da build mais recente. No Android, permita a instalação de "fontes desconhecidas".
+Vá em **Releases** (barra lateral do repositório) e baixe `IbamaMan-Guardiao-da-Amazonia.apk` da build mais recente. No Android, permita a instalação de "fontes desconhecidas".
 
 Cada push na `main` gera uma nova build automaticamente (aba **Actions**).
 

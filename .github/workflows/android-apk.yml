@@ -40,20 +40,20 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Renomear APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk IbamaMan-Garimpo-Slug.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk IbamaMan-Guardiao-da-Amazonia.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: IbamaMan-Garimpo-Slug-apk
-          path: IbamaMan-Garimpo-Slug.apk
+          name: IbamaMan-Guardiao-da-Amazonia-apk
+          path: IbamaMan-Guardiao-da-Amazonia.apk
 
       - name: Publicar release com o APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: IbamaMan Garimpo Slug — build ${{ github.run_number }}
+          name: IbamaMan: Guardião da Amazônia — build ${{ github.run_number }}
           body: |
             APK de teste (debug) gerado automaticamente a partir de ${{ github.sha }}.
-            Baixe o arquivo IbamaMan-Garimpo-Slug.apk no celular e instale (permita "fontes desconhecidas").
-          files: IbamaMan-Garimpo-Slug.apk
+            Baixe o arquivo IbamaMan-Guardiao-da-Amazonia.apk no celular e instale (permita "fontes desconhecidas").
+          files: IbamaMan-Guardiao-da-Amazonia.apk
           make_latest: true
