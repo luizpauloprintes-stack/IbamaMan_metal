@@ -134,7 +134,7 @@ export default class UIScene extends Phaser.Scene {
     return Math.abs(p.x - b.x) < b.w / 2 + 6 && Math.abs(p.y - b.y) < b.h / 2 + 8;
   }
 
-  // Lê os dedos: esquerda = direcional flutuante; direita = gestos (toque, segurar, arrastar ↑).
+  // Lê os dedos: esquerda = direcional flutuante; direita = botões PULAR/TIRO/BOMBA.
   readTouch(time) {
     const s = { left: false, right: false, crouch: false, fire: false, jumpTap: false, bombTap: false, fireTap: false, held: {} };
     const st = this.stick;

@@ -1,5 +1,5 @@
 // Controles touch (coordenadas no espaço do jogo 800x450).
-// Padrão dos jogos de ação para celular: tiro automático + gestos em áreas grandes, sem botões pequenos.
+// Padrão dos jogos de ação para celular: direcional flutuante + botões grandes e separados + tiro automático.
 export const STICK = {
   zoneMaxX: 0.5,      // metade esquerda da tela: direcional flutuante (nasce onde o polegar toca)
   radius: 50,
