@@ -18,3 +18,6 @@ export const SCREEN_LEFT_MARGIN = 90; // jogador não encosta na borda esquerda 
 // Objetos com setScrollFactor(0) devem somar VIEW_OFF_X/VIEW_OFF_Y à posição de tela desejada.
 export const VIEW_OFF_X = (GAME_W * (RENDER_ZOOM - 1)) / 2;
 export const VIEW_OFF_Y = (GAME_H * (RENDER_ZOOM - 1)) / 2;
+// O cenário inteiro sobe VIEW_LIFT px na tela: o chão fica mais alto e sobra uma faixa de terra
+// embaixo para o direcional e os botões, sem cobrir os personagens.
+export const VIEW_LIFT = 72;

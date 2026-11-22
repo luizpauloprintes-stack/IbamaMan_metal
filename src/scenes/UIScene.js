@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, RENDER_ZOOM } from '../config/constants.js';
+import { GAME_W, GAME_H, RENDER_ZOOM, VIEW_LIFT } from '../config/constants.js';
 import { unlockAudio } from '../audio/Sfx.js';
 
 // HUD + controles (touch multi-toque e teclado). Escreve o estado em registry 'controls';
@@ -239,7 +239,7 @@ export default class UIScene extends Phaser.Scene {
     const gs = this.scene.get('GameScene');
     const pl = gs && gs.player;
     const px = pl && gs.sys.isActive() ? pl.x - gs.viewLeft : -999;
-    const py = pl ? pl.y - 32 : -999;
+    const py = pl ? pl.y - VIEW_LIFT - 32 : -999;
     const bg = this.btnGfx; bg.clear();
     BUTTONS.forEach((b) => {
       const on = !!(this.held && this.held[b.id]);

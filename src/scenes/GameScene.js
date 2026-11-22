@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y } from '../config/constants.js';
+import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y, VIEW_LIFT } from '../config/constants.js';
 import { WEAPONS, HG_BARREL } from '../config/weapons.js';
 import { MISSIONS, CAMPAIGN } from '../config/missions.js';
 import { LEVELS, bossLockX, bossTriggerX, BOSS_SCORE } from '../config/levels.js';
@@ -47,7 +47,8 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.setBoundsCollision(true, true, true, false);
     const cam = this.cameras.main;
     cam.setZoom(RENDER_ZOOM);
-    cam.setBounds(0, 0, LW, GAME_H);
+    cam.setBounds(0, 0, LW, GAME_H + VIEW_LIFT);
+    cam.scrollY = VIEW_LIFT - VIEW_OFF_Y; // topo visível = VIEW_LIFT (chão sobe na tela)
     this.setViewLeft(0);
 
     this.buildBackground();
@@ -69,7 +70,7 @@ export default class GameScene extends Phaser.Scene {
   buildBackground() {
     const key = this.level.bg;
     this.fullBg = key === 'bg_sky' ? FULL_BACKGROUND : REAL_KEYS.has(key);
-    this.bgSky = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y, GAME_W, GAME_H, this.fullBg ? key : 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
+    this.bgSky = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y - VIEW_LIFT, GAME_W, GAME_H, this.fullBg ? key : 'bg_sky').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg);
     if (this.fullBg) {
       const t = this.textures.get(key).getSourceImage();
       this.bgSky.setTileScale(GAME_H / t.height);
@@ -77,17 +78,24 @@ export default class GameScene extends Phaser.Scene {
       this.bgForest = null; this.bgRiver = null;
       return;
     }
-    this.bgForest = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y + 150, GAME_W, 180, 'bg_forest').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 1);
-    this.bgRiver = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y + 320, GAME_W, 90, 'bg_river').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 2);
+    this.bgForest = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y - VIEW_LIFT + 150, GAME_W, 180, 'bg_forest').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 1);
+    this.bgRiver = this.add.tileSprite(VIEW_OFF_X, VIEW_OFF_Y - VIEW_LIFT + 320, GAME_W, 90, 'bg_river').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.bg + 2);
   }
 
   buildTerrain() {
     this.waterStrips = [];
     this.level.terrain.forEach(([type, x0, x1]) => {
       if (type === 'mud') {
-        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'ground_mud').setOrigin(0).setDepth(DEPTH.world).setTileScale(ts('ground_mud'));
+        // uma faixa só da textura (a repetição mostraria uma 2ª linha de grama); abaixo, terra lisa
+        const tileH = Math.min(this.textures.get('ground_mud').getSourceImage().height * ts('ground_mud') - 2, GAME_H + VIEW_LIFT - GROUND_Y);
+        this.add.tileSprite(x0, GROUND_Y, x1 - x0, tileH, 'ground_mud').setOrigin(0).setDepth(DEPTH.world).setTileScale(ts('ground_mud'));
+        const soilY = GROUND_Y + tileH;
+        this.add.rectangle(x0, soilY, x1 - x0, GAME_H + VIEW_LIFT - soilY, 0x5a3f24).setOrigin(0).setDepth(DEPTH.world);
+        this.add.rectangle(x0, soilY, x1 - x0, 3, 0x3b2916).setOrigin(0).setDepth(DEPTH.world);
       } else {
-        this.add.tileSprite(x0, GROUND_Y, x1 - x0, GAME_H - GROUND_Y, 'water').setOrigin(0).setDepth(DEPTH.world).setTint(0x8a7a5a).setTileScale(ts('water'));
+        const wH = Math.min(this.textures.get('water').getSourceImage().height * ts('water') - 2, GAME_H + VIEW_LIFT - GROUND_Y);
+        this.add.tileSprite(x0, GROUND_Y, x1 - x0, wH, 'water').setOrigin(0).setDepth(DEPTH.world).setTint(0x8a7a5a).setTileScale(ts('water'));
+        this.add.rectangle(x0, GROUND_Y + wH, x1 - x0, GAME_H + VIEW_LIFT - GROUND_Y - wH, 0x5e5236).setOrigin(0).setDepth(DEPTH.world);
         // lâmina d'água na frente dos personagens (efeito de vadear)
         this.waterStrips.push(this.add.tileSprite(x0, GROUND_Y - 12, x1 - x0, 52, 'water').setOrigin(0).setDepth(DEPTH.water).setAlpha(0.88).setTileScale(ts('water')));
       }
@@ -231,14 +239,14 @@ export default class GameScene extends Phaser.Scene {
     this.playerShots.getChildren().slice().forEach((s) => {
       if (s.dieAt && time >= s.dieAt) { s.destroy(); return; }
       if (s.kind === 'rocket' && Math.random() < 0.65) this.fx.puff(s.x - Math.sign(s.body.velocity.x) * 10, s.y, 0xe0e0e0, 0.8, 260);
-      if (s.x < v.left - 60 || s.x > v.right + 60 || s.y < -60 || s.y > GAME_H + 60) s.destroy();
+      if (s.x < v.left - 60 || s.x > v.right + 60 || s.y < -60 || s.y > GAME_H + VIEW_LIFT + 60) s.destroy();
     });
-    this.bombs.getChildren().slice().forEach((b) => { if (b.y > GAME_H + 60 || b.x > v.right + 200) b.destroy(); });
-    this.enemyShots.getChildren().slice().forEach((m) => { if (m.y > GAME_H + 40 || m.x < v.left - 100) m.destroy(); });
+    this.bombs.getChildren().slice().forEach((b) => { if (b.y > GAME_H + VIEW_LIFT + 60 || b.x > v.right + 200) b.destroy(); });
+    this.enemyShots.getChildren().slice().forEach((m) => { if (m.y > GAME_H + VIEW_LIFT + 40 || m.x < v.left - 100) m.destroy(); });
     this.buckets.getChildren().slice().forEach((k) => { if (k.x < v.left - 60) k.destroy(); });
     this.enemies.getChildren().slice().forEach((e) => {
       if (e.isTarget && e.x < v.left - 220) e.destroy();
-      else if (e.isTarget && e.y > GAME_H + 80) { e.isTarget = false; this.onEnemyKilled(e); e.destroy(); } // caiu fora do mapa
+      else if (e.isTarget && e.y > GAME_H + VIEW_LIFT + 80) { e.isTarget = false; this.onEnemyKilled(e); e.destroy(); } // caiu fora do mapa
     });
   }
 
@@ -378,7 +386,7 @@ export default class GameScene extends Phaser.Scene {
         const foes = this.enemies.getChildren().filter((e) => e.isTarget && e.x > view.left && e.x < view.right);
         if (!foes.length) return;
         const e = Phaser.Utils.Array.GetRandom(foes);
-        const hx = view.left + heli.x - VIEW_OFF_X; const hy = heli.y - VIEW_OFF_Y + 40;
+        const hx = view.left + heli.x - VIEW_OFF_X; const hy = heli.y - VIEW_OFF_Y + VIEW_LIFT + 40;
         const g = this.add.graphics().setDepth(DEPTH.fx);
         g.lineStyle(2, 0x66ff66, 1).lineBetween(hx, hy, e.x, e.y - 30);
         this.time.delayedCall(70, () => g.destroy());

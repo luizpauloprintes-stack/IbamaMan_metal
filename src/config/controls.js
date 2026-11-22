@@ -13,11 +13,11 @@ export const STICK = {
 // Botões de ação separados, em arco no canto direito (padrão dos jogos de ação mobile).
 // O toque vai para o botão MAIS PRÓXIMO dentro da zona de botões (sem ponto morto entre eles).
 export const BUTTONS = [
-  { id: 'jump', label: 'PULAR', x: 728, y: 386, r: 42, color: 0x2f74c0 },  // principal: mais perto do polegar
-  { id: 'fire', label: 'TIRO', x: 626, y: 408, r: 34, color: 0xc0392b },
-  { id: 'bomb', label: 'BOMBA', x: 742, y: 282, r: 30, color: 0xe67e22 }
+  { id: 'jump', label: 'PULAR', x: 734, y: 400, r: 40, color: 0x2f74c0 },  // principal: mais perto do polegar
+  { id: 'fire', label: 'TIRO', x: 632, y: 412, r: 33, color: 0xc0392b },
+  { id: 'bomb', label: 'BOMBA', x: 538, y: 416, r: 28, color: 0xe67e22 }
 ];
-export const BUTTON_ZONE = { minX: 560, minY: 230, maxDist: 95 }; // fora disso o toque não aciona botão
+export const BUTTON_ZONE = { minX: 480, minY: 330, maxDist: 95 }; // fora disso o toque não aciona botão
 export const BUTTON_ALPHA = { idle: 0.38, pressed: 0.8, behindPlayer: 0.14 };
 
 // Tiro automático: atira sozinho quando há alvo à frente
