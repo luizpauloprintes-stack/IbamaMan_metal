@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 import { DEPTH } from '../config/constants.js';
 import { Sfx } from '../audio/Sfx.js';
+import { buzz } from '../systems/Native.js';
 import { ts, setBodyLogical } from '../config/assets.js';
 import FreedAnimal from './FreedAnimal.js';
 
 export const ANIMAL_NAMES = ['ARARA', 'ONÇA', 'MACACO', 'PEIXE-BOI'];
-const DROPS = [0, 1, 2, 3, 4, 5]; // frames de powerups_hrf: H, R, F, medkit, açaí, abacaxi
 
 // Gaiola com animal silvestre: ao ser destruída por tiros/bombas, liberta o animal e dropa um bônus.
 export default class Cage extends Phaser.Physics.Arcade.Sprite {
@@ -33,13 +33,14 @@ export default class Cage extends Phaser.Physics.Arcade.Sprite {
     this.isTarget = false;
     const scene = this.scene;
     Sfx.rescue();
+    buzz('light');
     scene.rescued = (scene.rescued || 0) + 1;
     scene.addScore(500, this.x, this.y - 70, `${ANIMAL_NAMES[this.animal]} RESGATADA! +500`);
     scene.spawnExplosion(this.x, this.y - 30, 0.6, false);
     scene.fx.debris(this.x, this.y - 30, 0x8c5a2b, 12);
 
     new FreedAnimal(scene, this.x, this.y, this.animal); // movimento próprio de cada animal
-    scene.spawnPickup(this.x, this.y - 40, Phaser.Utils.Array.GetRandom(DROPS));
+    scene.spawnPickup(this.x, this.y - 40, scene.pickDrop()); // bônus sorteado pela cena (kit médico é raro)
     this.destroy();
   }
 }

@@ -165,6 +165,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.invulnerable || this.dead) return false;
     Sfx.hurt();
     this.lives -= 1;
+    if (this.scene.onPlayerHurt) this.scene.onPlayerHurt();
     this.setWeapon('PISTOL');
     if (this.lives < 0) {
       this.lives = 0;

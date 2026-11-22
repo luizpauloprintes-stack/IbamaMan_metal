@@ -10,6 +10,14 @@ export const LEVELS = {
     levelW: 4200,
     bg: 'bg_m1',
     intro: 'Pare a derrubada e liberte os animais!',
+    // dicas da primeira partida (somem depois de vistas); x = posição do jogador que mostra a dica
+    tips: [
+      { x: 0, touch: 'Encoste o polegar à ESQUERDA e arraste para andar', keys: 'Setas ou A/D para andar' },
+      { x: 420, touch: 'Toque em PULAR para subir nas plataformas', keys: 'ESPAÇO para pular' },
+      { x: 620, touch: 'O TIRO AUTO mira sozinho. Atire na GAIOLA para libertar o animal!', keys: 'Z para atirar. Atire na GAIOLA para libertar o animal!' },
+      { x: 1100, touch: 'BOMBA explode grupos de inimigos e tambores de mercúrio', keys: 'X para jogar BOMBA nos grupos e tambores' },
+      { x: 1700, touch: 'Liberte TODOS os animais para ganhar uma estrela', keys: 'Liberte TODOS os animais para ganhar uma estrela' }
+    ],
     terrain: [['mud', 0, 1500], ['water', 1500, 1700], ['mud', 1700, 4200]],
     platforms: [[520, 320], [940, 300], [1180, 250], [1600, 320], [2240, 310], [2480, 250], [2900, 320]],
     raft: null,
@@ -34,7 +42,8 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_m1', caption: 'A FLORESTA FICA DE PÉ',
-      pec: 'Quem fiscaliza o desmatamento não pode depender de quem está no governo. Na Constituição, como instituição permanente de Estado, o Ibama não poderia ser extinto nem esvaziado por decreto.',
+      pec: 'Na Constituição, o Ibama não poderia ser extinto nem esvaziado por decreto, mude quem mudar no governo.',
+      par: 150, music: 0,
       title: 'VOCÊ SALVOU\nA FLORESTA!',
       lines: ['Prendeu os criminosos ambientais', 'Destruiu as motosserras do Barão', 'Parou o desmatamento']
     }
@@ -76,7 +85,8 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_restored', caption: 'O IGARAPÉ VAI SE RECUPERAR',
-      pec: 'Com autonomia técnica, financeira e orçamentária garantida na Constituição, a fiscalização do garimpo não pararia por falta de verba ou por ordem política.',
+      pec: 'Com verba e autonomia garantidas na Constituição, a fiscalização do garimpo não para por corte ou ordem política.',
+      par: 180, music: -2,
       title: 'VOCÊ ACABOU\nCOM O GARIMPO!',
       lines: ['Explodiu as máquinas do garimpo', 'Tirou o mercúrio do igarapé', 'Prendeu os garimpeiros ilegais']
     }
@@ -119,7 +129,8 @@ export const LEVELS = {
     },
     victory: {
       key: 'bg_restored', caption: 'O RIO VOLTOU A FICAR LIMPO',
-      pec: 'Pela PEC, os dirigentes do Ibama e do ICMBio seriam escolhidos por critérios técnicos, com mandato de 4 anos e aprovação do Senado. Menos espaço para indicações sem preparo.',
+      pec: 'Dirigentes do Ibama escolhidos por critério técnico, com mandato de 4 anos e aprovação do Senado.',
+      par: 170, music: 3,
       title: 'VOCÊ SALVOU\nO RIO!',
       lines: ['Explodiu a Mega Draga', 'Acabou com o mercúrio na água', 'Os peixes vão voltar']
     }
@@ -161,7 +172,8 @@ LEVELS[4] = {
   },
   victory: {
     key: 'bg_restored', caption: 'A AMAZÔNIA AGRADECE',
-      pec: 'Servidores com carreira típica de Estado têm mais segurança para enfrentar o crime ambiental. Proteja quem protege a Amazônia: apoie a PEC 13/2022.',
+      pec: 'Carreira típica de Estado dá segurança a quem enfrenta o crime ambiental. Proteja quem protege a Amazônia.',
+    par: 220, music: -4,
     title: 'VOCÊ PRENDEU O\nCHEFÃO DO GARIMPO!',
     lines: ['Afundou a Balsa-Fortaleza', 'Prendeu os criminosos ambientais', 'Salvou os rios e a floresta']
   }

@@ -32,16 +32,23 @@ src/config/
   enemies.js               balanceamento de garimpeiro, madeireiro, Barão, acampamento (CAMP), Balsa-Fortaleza (FORTRESS) e revanche (BARON_FINAL)
   assets.js                SPRITE_MANIFEST (PNGs reais) + KEYS (formato de cada textura)
   controls.js              controles touch: direcional flutuante, botões PULAR/TIRO/BOMBA, tiro automático e botão AUTO
-  links.js                 link da PEC 13/2022 (consulta pública do Senado) e openExternal() (abre no navegador do celular)
+  links.js                 textos e link da PEC 13/2022 (consulta pública do Senado), link do jogo, aviso de iniciativa pessoal, openExternal()
+  facts.js                 "VOCÊ SABIA?": um fato curto COM FONTE por missão (cartão de vitória)
+src/systems/
+  Save.js                  progresso no aparelho (localStorage): missões liberadas, estrelas, recordes, modo difícil, música/sons, dicas vistas
+  Native.js                plugins Capacitor: vibração (Haptics), compartilhar (Share + Filesystem p/ imagem), botão Voltar e retorno ao app (App)
+  Pec.js                   funil da PEC: openPec(), aviso 'pec-return' quando o jogador volta do site do Senado, shareGame()
+src/ui/widgets.js          makeButton (aciona ao soltar o dedo), fmtTime, showThanks (agradecimento + compartilhar)
 src/gfx/placeholders.js    gera TODAS as texturas em pixel art via this.make.graphics()
 src/gfx/Organic.js         movimento "vivo" por cima dos quadros: respiração, inclinação ao andar, squash/stretch, recuo e tremor de motor (fase própria por instância)
 src/gfx/Particles.js       partículas leves: fumaça do míssil, poeira, cápsulas, faíscas, estilhaços (teto de 140)
-src/audio/Sfx.js           efeitos sintetizados com Web Audio API (sem arquivos de áudio)
+src/audio/Sfx.js           efeitos E música (sequenciador chiptune: trilhas title/level/boss, transposta por missão) sintetizados com Web Audio API
 src/scenes/
   BootScene.js             carrega PNGs do manifest, gera placeholders faltantes, cria animações → TitleScene
-  TitleScene.js            capa do jogo (title_cover); toque/tecla começa a campanha; fim da campanha volta para cá
+  TitleScene.js            capa do jogo (title_cover) com número da build e aviso; toque/tecla abre o mapa
+  MapScene.js              mapa de missões: cartões com estrelas/recorde, missões bloqueadas, modo difícil, compartilhar e o convite da PEC
   GameScene.js             monta a fase de levels.js; câmera, colisões, ondas, gaiolas, power-ups, chefe, vitória → próxima missão
-  UIScene.js               HUD + direcional flutuante + botões touch e teclado (sobreposta à GameScene)
+  UIScene.js               HUD + direcional flutuante + botões touch e teclado + pausa, cartão de resultado e game over (sobreposta à GameScene)
 src/objects/
   Player.js                movimento, pulo, agachar, armas, munição, bomba, dano/vidas
   Miner.js                 garimpeiro com mangueira (anda até o jogador e lança lama em parábola)
@@ -73,9 +80,11 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Na `UIScene`, ponteiros vêm em pixels do canvas: divida por `RENDER_ZOOM`.
 
 ### Fluxo entre cenas
-- `BootScene` → `TitleScene` (capa) → `GameScene`; a `GameScene` lança a `UIScene` por cima. Depois da Missão 4, FIRE volta à capa.
+- `BootScene` → `TitleScene` (capa) → `MapScene` (mapa de missões) → `GameScene`; a `GameScene` lança a `UIScene` por cima. Vitória → PRÓXIMA leva à missão seguinte (mantém pontos e vidas, teto de `PLAYER_MAX_LIVES`); depois da Missão 4 volta ao mapa com "CAMPANHA CONCLUÍDA" e o modo difícil liberado.
+- Ao reiniciar a `GameScene`, ela chama `UIScene.resetForMission()` (a `UIScene` continua ativa entre missões; sem isso o cartão de resultado ficaria aberto e travaria os controles).
+- **Telas por cima (`UIScene.modal`):** `'pause'`, `'result'`, `'lost'`. Com uma delas aberta os toques não viram controles; os botões são objetos interativos (`makeButton`). Botão Voltar do Android (em `main.js`): no jogo pausa, no mapa volta à capa, na capa fecha o app.
 - **Controles:** a `UIScene` escreve em `registry.get('controls')` (`left/right/crouch/jump/fire/bomb` + bordas `jumpQueued`, `bombQueued`, `firePressed`). A `GameScene` lê e consome as bordas.
-- **Controles touch:** metade esquerda = direcional *flutuante* (nasce sob o polegar; empurrar bem para cima também pula, para baixo agacha). Embaixo à direita, na faixa abaixo do chão = **três botões separados em linha** (`BUTTONS` em `src/config/controls.js`): **BOMBA**, **TIRO** (segurar) e **PULAR** (maior, no canto, mais perto do polegar). O toque vai para o botão mais próximo dentro de `BUTTON_ZONE` (sem ponto morto entre eles; o dedo pode deslizar de um para outro) e os botões ficam quase transparentes quando o IbamaMan passa por trás. **Tiro automático** (ligado por padrão no celular, `GameScene.autoTarget`): mira inimigos/gaiolas/tambores/chefe visíveis à altura da arma e atira quando estão à frente; vira o IbamaMan para o alvo se ele estiver parado. O botão "TIRO AUTO" no canto superior direito liga/desliga (salvo no aparelho). Qualquer toque novo serve como "continuar" nas telas de vitória/game over. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
+- **Controles touch:** metade esquerda = direcional *flutuante* (nasce sob o polegar; empurrar bem para cima também pula, para baixo agacha). Embaixo à direita, na faixa abaixo do chão = **três botões separados em linha** (`BUTTONS` em `src/config/controls.js`): **BOMBA**, **TIRO** (segurar) e **PULAR** (maior, no canto, mais perto do polegar). O toque vai para o botão mais próximo dentro de `BUTTON_ZONE` (sem ponto morto entre eles; o dedo pode deslizar de um para outro) e os botões ficam quase transparentes quando o IbamaMan passa por trás. **Tiro automático** (ligado por padrão no celular, `GameScene.autoTarget`): mira inimigos/gaiolas/tambores/chefe visíveis à altura da arma e atira quando estão à frente; vira o IbamaMan para o alvo se ele estiver parado. O botão "TIRO AUTO" no canto superior direito liga/desliga (salvo no aparelho); ao lado, o botão "II" (`PAUSE_BTN`) pausa. No teclado: ESC/P pausa, Z/J/Enter continua nas telas de resultado/game over, P abre a PEC nessas telas. A câmera mantém o jogador a `CAMERA_LEAD_X` px da esquerda e ele não encosta na borda (`SCREEN_LEFT_MARGIN`).
 - **HUD:** a `UIScene` faz *polling* de `GameScene.getHudState()` a cada quadro (evita listeners órfãos ao reiniciar a cena).
 
 ### Paisagem / Android
@@ -95,7 +104,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 
 ### Campanha e fluxo
 - A `GameScene` recebe `{ mission, score, lives }` em `scene.restart(data)` e monta a fase de `LEVELS[mission]`.
-- Vitória → "Toque em FIRE para a Missão N" (mantém pontos e vidas). Depois da Missão 4: "CAMPANHA CONCLUÍDA!" e volta à Missão 1 (se alguma missão estiver com `playable: false`, aparece "FIM DA DEMO"). Game over → repete a missão atual do zero.
+- Vitória → cartão de resultado → PRÓXIMA (mantém pontos e vidas). Depois da Missão 4: volta ao mapa. Game over → TENTAR DE NOVO (repete a missão do zero) ou MAPA. Missões só ficam liberadas no mapa depois de vencer a anterior (`Save.unlocked`).
 - Para criar uma missão nova: adicione `LEVELS[id]` em `levels.js`, marque `playable: true` em `missions.js` e, se o chefe for novo, crie a classe com a mesma interface (`hp`, `maxHP`, `isTarget`, `defeated`, `enter()`, `takeDamage()`, `randomPoint()`, chamando `scene.onBossDefeated(this)`).
 
 ### Missão 1 — Desmatamento
@@ -115,9 +124,16 @@ tools/source_sheets/       as 8 folhas de arte originais
 - A cena chama `enemy.update(time, delta)` — o `delta` é obrigatório (sem ele a escala vira NaN e o inimigo some).
 - Callbacks com atraso (`delayedCall`) em inimigos sempre checam `this.active` (o inimigo pode ter sido removido).
 
-### Tela de vitória
-- Ao fim de **cada** missão, depois das conquistas, o cartão do cenário dá lugar ao cartão **"POR QUE APOIAR A PEC 13/2022?"** com um argumento diferente por missão (`victory.pec`) e o botão "APOIAR A PEC 13/2022" (consulta pública do Senado, `src/config/links.js`). Os argumentos seguem o texto da PEC (instituição permanente na Constituição, autonomia técnica/financeira/orçamentária, dirigentes por critérios técnicos com mandato de 4 anos e aprovação do Senado, carreiras típicas de Estado); a justificação oficial não fala literalmente em extinção ou em nomeações de fora, por isso os textos tratam disso como consequência do texto.
-- Cada missão tem em `levels.js` → `victory`: `title` (ex.: "VOCÊ SALVOU A FLORESTA!"), `lines` (conquistas mostradas uma a uma com ★) e o cartão (`key`, `caption`). A última conquista é sempre "Animais libertados: N" (contado em `scene.rescued`).
+### Engajamento e a PEC 13/2022 (objetivo principal do jogo)
+- **Funil da PEC em todos os pontos:** mapa (painel fixo + "VOTAR SIM NA PEC 13"), pausa, game over e cartão de resultado. Texto curto e verdadeiro em `links.js` (`PEC.status`: a PEC está parada na CCJ do Senado desde 2022, aguardando relator; conferido em nov/2026). Ao voltar do site do Senado (`pec-return`), aparece "OBRIGADO POR APOIAR O IBAMA!" com botão de compartilhar. **Não há recompensa no jogo por votar**, para não distorcer a consulta pública.
+- **Compartilhar:** `shareGame()` manda imagem da tela + texto com o link da consulta e o link do jogo (`GAME_LINK`, release mais recente). Sem plugin, abre o WhatsApp (`wa.me`).
+- **Cartão de resultado** (ao fim de cada missão): "AUTO DE INFRAÇÃO" com o placar de impacto (infratores autuados, motosserras apreendidas, máquinas do garimpo destruídas, tambores de mercúrio retirados, animais libertados, pontos/recorde), carimbo "CUMPRIDA", **3 estrelas** (todos os animais, sem perder vida, tempo ≤ `victory.par`) com "NOVA!", "VOCÊ SABIA?" (`facts.js`, com fonte), o argumento da missão (`victory.pec`, uma frase) e os botões VOTAR SIM / COMPARTILHAR / PRÓXIMA (liberado após 1,8 s).
+- **Fatos:** só use dados com fonte verificável e mantenha a fonte no texto. Os argumentos da PEC seguem o texto da proposta (instituição permanente na Constituição, autonomia técnica/financeira/orçamentária, dirigentes por critérios técnicos com mandato de 4 anos e aprovação do Senado, carreiras típicas de Estado).
+- **Aviso:** `DISCLAIMER` ("Iniciativa pessoal e independente. Não é material oficial do Ibama.") aparece na capa, no mapa, na pausa e no resultado.
+- **Dificuldade (`DIFFICULTY` em `enemies.js`):** no máximo 1 kit médico (+1 vida) por missão, mais provável com 1 vida ou menos (`GameScene.pickDrop`); vidas carregadas entre missões até `PLAYER_MAX_LIVES` (5). **Modo difícil** (liberado ao terminar a campanha, ligado no mapa): 2 vidas, dano do jogador ×0,7, pontos ×2, sem kit médico.
+- **Combo (`COMBO`):** abates dentro de 2,4 s multiplicam o bônus (até x5), com "COMBO xN" no HUD.
+- **Dicas da primeira partida:** `levels[1].tips` (texto para toque e para teclado), disparadas pela posição do jogador; somem depois que a Missão 1 é vencida (`Save.tipsDone`).
+- **Música e vibração:** trilha `level` (transposta por `victory.music`) e `boss` no chefe; liga/desliga na pausa (salvo). Vibração ao levar dano (forte), em explosões grandes (média) e ao libertar animal (leve).
 
 ### Inimigos e bordas da fase
 - Inimigos que entram pela borda nascem em `edgeX(side)`, sempre **sobre o chão** (`levelW` limita). Quem cair fora do mapa é removido e conta como baixa (`onEnemyKilled`), para nunca travar a contagem do acampamento.
@@ -137,7 +153,7 @@ tools/source_sheets/       as 8 folhas de arte originais
 - Chefe em **dois estágios**:
   1. **Balsa-Fortaleza** (`MegaDraga` com `FORTRESS`: 1300 HP, tinta de aço) com o Barão em pé no convés (sprite `rider`, só visual; fica com o rosto vermelho quando a fortaleza entra no estado 2).
   2. Ao afundar a fortaleza, o Barão salta na água (`startBaronStage`) e começa a **revanche** (`Baron` com `BARON_FINAL`: 520 HP), com a barra trocando para "BARÃO DO GARIMPO".
-- Derrota do Barão: "BARÃO PRESO!", "CAMPANHA CONCLUÍDA!" e o cartão da PEC com o botão "APOIAR A PEC 13/2022", que abre a consulta pública oficial do Senado (e-Cidadania) — texto e URL em `src/config/links.js`. No PC, tecla P abre o link.
+- Derrota do Barão: "BARÃO AUTUADO!", cartão de resultado e, ao concluir, o mapa com "CAMPANHA CONCLUÍDA!" e o convite "Você protegeu a Amazônia no jogo. Agora proteja o Ibama de verdade" — texto e URL em `src/config/links.js`.
 
 ## Armas (`src/config/weapons.js`)
 
@@ -207,4 +223,5 @@ Corpos físicos que dependem do tamanho do quadro são calculados a partir de `d
 - Texto da interface em português (pt-BR); nomes de código em inglês/português curto.
 - Sem áudio em arquivo: novos sons vão em `src/audio/Sfx.js`.
 - Antes de commitar: `npm run build` sem erros e uma partida de teste de cada missão jogável (chegar ao chefe, vencê-lo e passar para a próxima).
+- Plugins nativos (`@capacitor/haptics`, `share`, `filesystem`, `app`) precisam de `npx cap sync android` depois de instalados (o CI já roda). Sempre use as funções de `src/systems/Native.js`, que têm alternativa para o navegador.
 - Para depurar no navegador: `window.__IBAMAMAN__.scene.getScene('GameScene')`.

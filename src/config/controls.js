@@ -29,3 +29,4 @@ export const AUTO_FIRE = {
 
 // Botão AUTO (liga/desliga o tiro automático), abaixo da HUD da direita
 export const AUTO_BTN = { x: 742, y: 62, w: 92, h: 22 };
+export const PAUSE_BTN = { x: 668, y: 62, w: 34, h: 22 };

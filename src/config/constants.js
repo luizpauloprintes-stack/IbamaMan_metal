@@ -10,6 +10,7 @@ export const LEVEL_W = 4200;          // largura da fase demonstrativa
 export const BOSS_LOCK_X = 3400;      // scroll da câmera travado na arena do chefe
 export const BOSS_TRIGGER_X = 3450;   // jogador passa daqui -> trava câmera e ativa a Mega Draga
 export const PLAYER_LIVES = 3;
+export const PLAYER_MAX_LIVES = 5;      // teto de vidas acumuladas entre missões
 export const PLAYER_BOMBS = 10;
 export const DEPTH = { bg: 0, world: 10, enemies: 20, player: 30, shots: 40, water: 45, fx: 50 };
 export const CAMERA_LEAD_X = 340;     // posição do jogador na tela (px a partir da esquerda) enquanto avança

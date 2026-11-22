@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y, VIEW_LIFT } from '../config/constants.js';
+import { GAME_W, GAME_H, GROUND_Y, PLAYER_LIVES, PLAYER_MAX_LIVES, DEPTH, CAMERA_LEAD_X, SCREEN_LEFT_MARGIN, RENDER_ZOOM, VIEW_OFF_X, VIEW_OFF_Y, VIEW_LIFT } from '../config/constants.js';
 import { WEAPONS, HG_BARREL } from '../config/weapons.js';
 import { MISSIONS, CAMPAIGN } from '../config/missions.js';
 import { LEVELS, bossLockX, bossTriggerX, BOSS_SCORE } from '../config/levels.js';
-import { FORTRESS, BARON_FINAL } from '../config/enemies.js';
+import { FORTRESS, BARON_FINAL, DIFFICULTY, COMBO } from '../config/enemies.js';
+import { FACTS } from '../config/facts.js';
+import { Save } from '../systems/Save.js';
+import { buzz } from '../systems/Native.js';
 import { AUTO_FIRE } from '../config/controls.js';
 import { FULL_BACKGROUND, REAL_KEYS, ts, setBodyLogical } from '../config/assets.js';
 import Player from '../objects/Player.js';
@@ -13,7 +16,7 @@ import MegaDraga from '../objects/MegaDraga.js';
 import Logger from '../objects/Logger.js';
 import Baron from '../objects/Baron.js';
 import Camp from '../objects/Camp.js';
-import { Sfx } from '../audio/Sfx.js';
+import { Sfx, Music } from '../audio/Sfx.js';
 import Particles, { DEBRIS } from '../gfx/Particles.js';
 
 // Fases montadas a partir de src/config/levels.js (uma por missão jogável da campanha).
@@ -33,10 +36,20 @@ export default class GameScene extends Phaser.Scene {
     this.bossTriggered = false;
     this.ended = false;
     this.canRestart = false;
-    this.showRestored = false;
     this.won = false;
-    this.showPec = false;
+    this.lost = false;
+    this.result = null;      // resultado da missão (lido pela UIScene para o cartão de vitória)
+    this.showResult = false;
     this.rescued = 0; // animais libertados nesta missão
+    this.totalAnimals = this.level.cages.length;
+    this.hard = !!Save.get().hard;
+    this.stats = { foes: 0, saws: 0, machines: 0, mercury: 0, livesLost: 0 };
+    this.medkits = 0;
+    this.combo = { n: 0, until: 0 };
+    this.tip = null;
+    this.tipIndex = 0;
+    this.showTips = this.missionId === CAMPAIGN[0] && !Save.get().tipsDone && !!this.level.tips;
+    this.isTouch = this.sys.game.device.input.touch;
     this.gameOverAt = 0;
     this.waveIndex = 0;
     this.heliDone = false;
@@ -57,13 +70,17 @@ export default class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, 160, GROUND_Y - 10);
     this.player.setCollideWorldBounds(true);
-    if (data.lives) this.player.lives = Math.max(data.lives, PLAYER_LIVES);
+    const baseLives = this.hard ? DIFFICULTY.hard.lives : PLAYER_LIVES;
+    this.player.lives = data.lives ? Phaser.Math.Clamp(data.lives, baseLives, PLAYER_MAX_LIVES) : baseLives;
+    this.startedAt = this.time.now;
 
     this.populateLevel();
     this.createColliders();
 
     if (!this.scene.isActive('UIScene')) this.scene.launch('UIScene');
-    this.showBanner(`MISSÃO ${this.mission.id}: ${this.mission.title}`, 2600, '#ffd23f', this.level.intro);
+    else this.scene.get('UIScene').resetForMission();
+    this.showBanner(`MISSÃO ${this.mission.id}: ${this.mission.title}`, 2600, '#ffd23f', this.hard ? `MODO DIFÍCIL • ${this.level.intro}` : this.level.intro);
+    Music.play('level', this.level.victory.music || 0);
   }
 
   // ---------------------------------------------------------------- cenário
@@ -196,9 +213,11 @@ export default class GameScene extends Phaser.Scene {
     this.player.update(time, c);
     if (this.player.dead && !this.gameOverAt) {
       this.gameOverAt = time;
-      this.showBanner('GAME OVER', 0, '#ff4d4d', '');
-      this.time.delayedCall(1500, () => { this.canRestart = true; this.showBanner('GAME OVER', 0, '#ff4d4d', 'Toque na tela para tentar de novo'); });
+      this.showBanner('GAME OVER', 1500, '#ff4d4d', '');
+      Music.stop();
+      this.time.delayedCall(1500, () => { this.canRestart = true; this.lost = true; });
     }
+    this.updateTips();
 
     this.updateCamera();
     this.enemies.getChildren().forEach((e) => e.update(time, delta));
@@ -300,7 +319,52 @@ export default class GameScene extends Phaser.Scene {
   spawnCage(x, animal) { return new Cage(this, x, GROUND_Y, animal); }
 
   // inimigo derrotado (Miner/Logger avisam); o acampamento da Missão 2 conta as baixas
-  onEnemyKilled(e) { if (this.boss && this.boss.onEnemyKilled) this.boss.onEnemyKilled(e); }
+  onEnemyKilled(e) {
+    if (this.boss && this.boss.onEnemyKilled) this.boss.onEnemyKilled(e);
+    this.stats.foes += 1;
+    if (e instanceof Logger) this.stats.saws += 1;
+    if (this.ended || this.player.dead) return;
+    // combo: abates seguidos dentro da janela multiplicam o bônus
+    const now = this.time.now;
+    this.combo.n = now < this.combo.until ? Math.min(COMBO.max, this.combo.n + 1) : 1;
+    this.combo.until = now + COMBO.window;
+    if (this.combo.n >= 2) {
+      const bonus = COMBO.bonus * this.combo.n;
+      this.addScore(bonus, e.x, e.y - 95, `COMBO x${this.combo.n}! +${bonus * (this.hard ? DIFFICULTY.hard.scoreMul : 1)}`);
+      Sfx.combo(this.combo.n);
+    }
+  }
+
+  // jogador perdeu uma vida (Player.hurt avisa)
+  onPlayerHurt() {
+    this.stats.livesLost += 1;
+    this.combo.n = 0;
+    buzz('heavy');
+  }
+
+  // dano dos tiros do jogador (modo difícil: inimigos aguentam mais)
+  dmg(d) { return this.hard ? Math.round(d * DIFFICULTY.hard.dmgMul) : d; }
+
+  // bônus de gaiola: vida extra é rara (1 kit médico por missão; mais provável se o jogador estiver por um fio)
+  pickDrop() {
+    const maxKits = this.hard ? DIFFICULTY.hard.medkits : DIFFICULTY.medkitsPerMission;
+    const canKit = this.medkits < maxKits;
+    let f;
+    if (canKit && this.player.lives <= 1 && Math.random() < DIFFICULTY.lowLifeMedkitChance) f = 3;
+    else f = Phaser.Utils.Array.GetRandom(canKit ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 4, 5]);
+    if (f === 3) this.medkits += 1;
+    return f;
+  }
+
+  // dicas da primeira partida (Missão 1): aparecem conforme o jogador avança
+  updateTips() {
+    if (!this.showTips) return;
+    const t = this.level.tips[this.tipIndex];
+    if (t && this.player.x >= t.x) {
+      this.tip = { text: this.isTouch ? t.touch : t.keys, until: this.time.now + 5200 };
+      this.tipIndex += 1;
+    }
+  }
 
   spawnEnemyAt(type, x, y) {
     return type === 'logger' ? new Logger(this, x, y) : new Miner(this, x, y);
@@ -345,7 +409,7 @@ export default class GameScene extends Phaser.Scene {
     b.takeDamage = (d) => {
       if (!b.active) return;
       b.hp -= d;
-      if (b.hp <= 0) { this.addScore(50, b.x, b.y - 20); this.spawnExplosion(b.x, b.y, 0.5); this.fx.debris(b.x, b.y, DEBRIS.metal, 6); this.fx.debris(b.x, b.y, DEBRIS.hg, 4); b.destroy(); }
+      if (b.hp <= 0) { this.stats.mercury += 1; this.addScore(50, b.x, b.y - 20); this.spawnExplosion(b.x, b.y, 0.5); this.fx.debris(b.x, b.y, DEBRIS.metal, 6); this.fx.debris(b.x, b.y, DEBRIS.hg, 4); b.destroy(); }
     };
     return b;
   }
@@ -364,6 +428,7 @@ export default class GameScene extends Phaser.Scene {
       this.time.delayedCall(60, () => b.active && b.clearTint());
       if (b.hp > 0) return;
       b.isTarget = false;
+      this.stats.mercury += 1;
       this.addScore(HG_BARREL.score, b.x, b.y - 50, 'TAMBOR DE Hg! +100');
       const { x: bx, y: by } = b; const h = b.displayHeight;
       b.destroy();
@@ -391,7 +456,7 @@ export default class GameScene extends Phaser.Scene {
         g.lineStyle(2, 0x66ff66, 1).lineBetween(hx, hy, e.x, e.y - 30);
         this.time.delayedCall(70, () => g.destroy());
         Sfx.shoot('H');
-        e.takeDamage(30);
+        e.takeDamage(this.dmg(30));
       }
     });
     this.tweens.add({ targets: heli, x: VIEW_OFF_X + GAME_W + 220, duration: 5200, ease: 'Linear', onComplete: () => { fire.remove(false); heli.destroy(); } });
@@ -407,6 +472,7 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: cam, scrollX: lock - VIEW_OFF_X, duration: 900, ease: 'Sine.easeInOut' });
     this.physics.world.setBounds(lock + SCREEN_LEFT_MARGIN, 0, GAME_W - SCREEN_LEFT_MARGIN, GAME_H);
     Sfx.alarm();
+    Music.play('boss', this.level.victory.music || 0);
     this.showBanner(B.alert, 2200, '#ff4d4d', B.alertSub);
 
     if (B.type === 'camp') {
@@ -443,6 +509,7 @@ export default class GameScene extends Phaser.Scene {
     this.buckets.getChildren().slice().forEach((k) => { this.spawnExplosion(k.x, k.y, 0.5, false, true); k.destroy(); });
 
     if (boss instanceof Baron) { this.defeatBaron(boss); return; }
+    this.stats.machines += 1; // draga, balsa-fortaleza ou acampamento desmontado
     // acampamento: os tambores que sobraram na arena explodem em sequência (equipamento do garimpo)
     if (boss instanceof Camp) {
       this.barrels.getChildren().slice().forEach((b, i) => this.time.delayedCall(300 + i * 220, () => b.active && b.takeDamage && b.takeDamage(999)));
@@ -542,24 +609,29 @@ export default class GameScene extends Phaser.Scene {
     }
     this.addScore(BOSS_SCORE, boss.x - 60, boss.y - (boss.displayHeight + 40), B.defeatText);
     this.player.celebrate();
+    Music.stop();
     Sfx.victory();
-    // conquistas da missão: título grande + uma conquista por vez no subtítulo
+    buzz('medium');
+    if (boss instanceof Baron) this.stats.foes += 1; // o Barão também é autuado
+
+    // resultado: 3 estrelas (todos os animais, sem perder vida, dentro do tempo) + recordes salvos no aparelho
     const V = this.level.victory;
-    const lines = [...V.lines, `Animais libertados: ${this.rescued}`];
-    this.showBanner(V.title, 0, '#ffd23f', '');
-    lines.forEach((ln, i) => this.time.delayedCall(500 + i * 1100, () => this.showBanner(V.title, 0, '#ffd23f', `★ ${ln}`)));
-    const promptAt = 500 + lines.length * 1100 + 300;
-    this.time.delayedCall(1800, () => { this.showRestored = true; });
-    this.time.delayedCall(promptAt, () => {
-      this.canRestart = true;
-      this.won = true;
-      const next = this.nextMission();
-      const allDone = CAMPAIGN.length === MISSIONS.length;
-      this.showPec = true; // fim de cada missão: por que apoiar a PEC 13/2022 + botão para a consulta pública
-      const sub = next ? `Toque na tela para a Missão ${next}`
-        : allDone ? 'CAMPANHA CONCLUÍDA! Toque na tela para jogar de novo' : 'FIM DA DEMO — toque na tela para recomeçar';
-      this.showBanner(V.title, 0, '#ffd23f', sub);
-    });
+    const elapsed = (this.time.now - this.startedAt) / 1000;
+    const stars = [this.rescued >= this.totalAnimals, this.stats.livesLost === 0, elapsed <= V.par];
+    const lastId = CAMPAIGN[CAMPAIGN.length - 1];
+    const rec = Save.recordWin(this.missionId, stars, this.score, lastId);
+    if (this.showTips) Save.set({ tipsDone: true });
+    const next = this.nextMission();
+    this.result = {
+      mission: this.missionId, title: V.title.replace('\n', ' '), lines: V.lines,
+      stats: { ...this.stats }, rescued: this.rescued, totalAnimals: this.totalAnimals,
+      elapsed, par: V.par, stars, rec, score: this.score, hard: this.hard,
+      pec: V.pec, fact: FACTS[this.missionId], next, campaignDone: !next
+    };
+    this.won = true;
+    this.showBanner(V.title, 2300, '#ffd23f', `★ ${V.lines[0]}`);
+    this.time.delayedCall(2400, () => { this.showResult = true; Music.play('title'); });
+    this.time.delayedCall(3900, () => { this.canRestart = true; });
   }
 
   nextMission() {
@@ -575,12 +647,12 @@ export default class GameScene extends Phaser.Scene {
     if (shot.kind === 'flame') {
       if (shot.hitSet.has(target)) return; // atravessa inimigos, 1 acerto por alvo
       shot.hitSet.add(target);
-      target.takeDamage(shot.damage);
+      target.takeDamage(this.dmg(shot.damage));
       this.syncBoss(target);
       return;
     }
     if (shot.kind === 'rocket' || shot.kind === 'bomb') { this.detonate(shot); return; }
-    target.takeDamage(shot.damage);
+    target.takeDamage(this.dmg(shot.damage));
     this.syncBoss(target);
     this.spark(shot.x, shot.y);
     this.fx.sparks(shot.x, shot.y, target === this.boss ? 3 : 2);
@@ -602,6 +674,8 @@ export default class GameScene extends Phaser.Scene {
   explodeAt(x, y, radius, damage) {
     this.spawnExplosion(x, y, radius / 40, radius >= 80);
     this.cameras.main.shake(120, 0.006);
+    if (radius >= 70) buzz('medium');
+    damage = this.dmg(damage);
     const all = [...this.enemies.getChildren(), ...this.cages.getChildren(), ...this.buckets.getChildren(), ...this.barrels.getChildren()];
     if (this.boss) all.push(this.boss);
     all.forEach((t) => {
@@ -651,6 +725,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   addScore(n, x, y, text) {
+    if (this.hard) n *= DIFFICULTY.hard.scoreMul;
     this.score += n;
     this.popup(x, y, text || `+${n}`, '#ffe14d');
   }
@@ -673,25 +748,41 @@ export default class GameScene extends Phaser.Scene {
   getHudState() {
     const p = this.player;
     if (this.boss && this.boss.active) this.bossState.hp = this.boss.hp;
-    const banner = this.banner && this.time.now < this.banner.until ? this.banner : null;
+    const now = this.time.now;
+    const banner = this.banner && now < this.banner.until ? this.banner : null;
     return {
       score: this.score,
       weapon: WEAPONS[p.weapon].label,
       ammo: p.ammo < 0 ? '∞' : String(p.ammo),
       lives: p.lives,
       bombs: p.bombs,
+      rescued: this.rescued,
+      totalAnimals: this.totalAnimals,
+      combo: now < this.combo.until && this.combo.n >= 2 ? this.combo.n : 0,
       boss: this.bossState,
-      restored: this.showRestored && !this.showPec ? this.level.victory : null,
-      pec: this.showPec ? (this.level.victory.pec || true) : null,
+      result: this.showResult ? this.result : null,
+      lost: this.lost,
+      tip: this.tip && now < this.tip.until ? this.tip.text : null,
       banner
     };
   }
 
+  // pausa (chamada pela UIScene)
+  pauseGame() { if (this.ended && this.won) return; this.scene.pause(); Music.pause(); }
+  resumeGame() { this.scene.resume(); Music.resume(); }
+
+  goToMap(opts = {}) {
+    Music.stop();
+    this.scene.stop('UIScene');
+    this.scene.start('MapScene', opts);
+  }
+
   // vitória: próxima missão (mantém pontos e vidas); game over: repete a missão do zero
   restartGame() {
+    if (!this.canRestart) return;
     const next = this.won ? this.nextMission() : null;
     if (next) this.scene.restart({ mission: next, score: this.score, lives: this.player.lives });
-    else if (this.won) { this.scene.stop('UIScene'); this.scene.start('TitleScene'); } // campanha concluída: volta à capa
+    else if (this.won) this.goToMap({ campaignDone: true }); // campanha concluída: mapa com o convite da PEC
     else this.scene.restart({ mission: this.missionId });
   }
 }

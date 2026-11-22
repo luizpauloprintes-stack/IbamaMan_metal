@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { SPRITE_MANIFEST } from '../config/assets.js';
 import { generatePlaceholders } from '../gfx/placeholders.js';
+import { Save } from '../systems/Save.js';
+import { Music, setSfxEnabled } from '../audio/Sfx.js';
 import CYCLES from '../../public/assets/sprites/cycles.json';
 
 export default class BootScene extends Phaser.Scene {
@@ -18,6 +20,8 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     generatePlaceholders(this);
+    Music.setEnabled(Save.get().music);
+    setSfxEnabled(Save.get().sfx);
     this.createAnimations();
     this.scene.start('TitleScene');
   }
