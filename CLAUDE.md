@@ -15,7 +15,7 @@ Jogo de ação 2D (run-and-gun arcade). Nome do app: **IbamaMan: Guardião da Am
 | `python3 tools/build_sheets.py && python3 tools/build_motion.py && python3 tools/build_cycles.py && python3 tools/build_icons.py` | regenera sprites, ciclos de movimento (rig + folhas desenhadas) e ícone/capa — nesta ordem |
 | `npm run android:apk` | gera `android/app/build/outputs/apk/debug/app-debug.apk` (precisa Android SDK + JDK 21) |
 
-O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push na `main` e publica uma **Release** com o arquivo `IbamaMan-Guardiao-da-Amazonia.apk`.
+O GitHub Actions (`.github/workflows/android-apk.yml`) compila o APK a cada push na `main` e publica uma **Release** com o arquivo `IbamaMan-Guardiao-da-Amazonia.apk`. Todas as builds são assinadas com a chave fixa versionada `android/app/ibamaman-debug.keystore` (senha `android`) e têm `versionCode = GITHUB_RUN_NUMBER + 100`, para o Android instalar cada APK **por cima** do anterior. O número da build aparece no canto da capa (`__BUILD__`, definido no `vite.config.js`). **Não apague nem troque essa chave**: com outra assinatura o celular recusa a atualização.
 
 ## Arquitetura
 

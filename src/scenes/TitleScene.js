@@ -22,6 +22,10 @@ export default class TitleScene extends Phaser.Scene {
     this.add.text(GAME_W * 0.62, GAME_H * 0.42, `${MISSIONS.length} MISSÕES • RESGATE OS ANIMAIS • EMBARGUE O GARIMPO`,
       { ...TXT, fontSize: '11px', color: '#9cff57', strokeThickness: 3 }).setOrigin(0.5);
 
+    // eslint-disable-next-line no-undef
+    this.add.text(GAME_W - 6, GAME_H - 4, `versão build ${typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev'}`,
+      { ...TXT, fontSize: '9px', color: '#ffffff', strokeThickness: 2 }).setOrigin(1, 1).setAlpha(0.7);
+
     this.started = false;
     const go = () => {
       if (this.started) return;
