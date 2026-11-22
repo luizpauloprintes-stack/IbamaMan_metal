@@ -4,7 +4,8 @@ import { MISSIONS, CAMPAIGN } from '../config/missions.js';
 import { LEVELS } from '../config/levels.js';
 import { PEC, DISCLAIMER } from '../config/links.js';
 import { Save } from '../systems/Save.js';
-import { openPec, shareGame } from '../systems/Pec.js';
+import { shareGame } from '../systems/Pec.js';
+import { showPecInfo } from './PecScene.js';
 import { Music, unlockAudio } from '../audio/Sfx.js';
 import { TXT, makeButton, showThanks } from '../ui/widgets.js';
 
@@ -52,8 +53,8 @@ export default class MapScene extends Phaser.Scene {
       : PEC.status;
     this.add.rectangle(GAME_W / 2, 346, 640, 104, 0x0e2412, 0.94).setStrokeStyle(2, 0x9cff57);
     this.add.text(GAME_W / 2, 310, lead, { ...TXT, fontSize: '13px', color: data.campaignDone ? '#ffd23f' : '#ffffff', strokeThickness: 3 }).setOrigin(0.5);
-    makeButton(this, GAME_W / 2, 346, 380, 42, PEC.button, 0x2e8b3a, () => openPec(), { size: 17, pulse: true });
-    this.add.text(GAME_W / 2, 380, `${PEC.call} ${PEC.howTo}`, { ...TXT, fontSize: '9px', color: '#bbbbbb', strokeThickness: 2 }).setOrigin(0.5);
+    makeButton(this, GAME_W / 2, 346, 380, 42, PEC.button, 0x2e8b3a, () => showPecInfo(this), { size: 17, pulse: true });
+    this.add.text(GAME_W / 2, 380, PEC.howTo, { ...TXT, fontSize: '9px', color: '#bbbbbb', strokeThickness: 2 }).setOrigin(0.5);
     this.add.text(GAME_W / 2, 438, DISCLAIMER, { ...TXT, fontSize: '9px', color: '#999999', strokeThickness: 2 }).setOrigin(0.5);
 
     if (data.campaignDone) {
@@ -68,7 +69,7 @@ export default class MapScene extends Phaser.Scene {
     this.input.keyboard.on('keydown', (e) => {
       const n = Number(e.key);
       if (n >= 1 && n <= Save.get().unlocked && LEVELS[n]) this.startMission(n);
-      if (e.key === 'p' || e.key === 'P') openPec();
+      if (e.key === 'p' || e.key === 'P') showPecInfo(this);
     });
   }
 

@@ -4,7 +4,8 @@ import { unlockAudio, Sfx, Music, setSfxEnabled } from '../audio/Sfx.js';
 import { STICK, BUTTONS, BUTTON_ZONE, BUTTON_ALPHA, AUTO_FIRE, AUTO_BTN, PAUSE_BTN } from '../config/controls.js';
 import { PEC, DISCLAIMER } from '../config/links.js';
 import { Save } from '../systems/Save.js';
-import { openPec, shareGame } from '../systems/Pec.js';
+import { shareGame } from '../systems/Pec.js';
+import { showPecInfo } from './PecScene.js';
 import { TXT, makeButton, fmtTime, showThanks } from '../ui/widgets.js';
 
 // HUD + controles (touch multi-toque e teclado) + telas por cima do jogo (pausa, resultado, game over).
@@ -57,7 +58,7 @@ export default class UIScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     this.keys = kb.addKeys('LEFT,RIGHT,DOWN,UP,A,D,S,W,SPACE,Z,J,X,K');
     const c = this.controls;
-    const on = (names, fn) => names.forEach((n) => kb.on(`keydown-${n}`, (e) => { unlockAudio(); if (!e.repeat) fn(); }));
+    const on = (names, fn) => names.forEach((n) => kb.on(`keydown-${n}`, (e) => { unlockAudio(); if (!e.repeat && !this.scene.isActive('PecScene')) fn(); }));
     on(['SPACE', 'UP', 'W'], () => { if (!this.modal) c.jumpQueued = true; });
     on(['X', 'K'], () => { if (!this.modal) c.bombQueued = true; });
     on(['Z', 'J', 'ENTER'], () => {
@@ -65,7 +66,7 @@ export default class UIScene extends Phaser.Scene {
       c.firePressed = true;
     });
     on(['ESC', 'P'], () => {
-      if (this.modal === 'result' || this.modal === 'lost') { openPec(); return; }
+      if (this.modal === 'result' || this.modal === 'lost') { showPecInfo(this); return; }
       this.togglePause();
     });
   }
@@ -158,7 +159,7 @@ export default class UIScene extends Phaser.Scene {
     }, { size: 11 });
     m.add([this.musicBtn, this.sfxBtn]);
     m.add(this.add.text(GAME_W / 2, 262, PEC.status, { ...TXT, fontSize: '12px', color: '#ffffff', strokeThickness: 3 }).setOrigin(0.5));
-    m.add(makeButton(this, GAME_W / 2, 296, 320, 38, PEC.button, 0x2e8b3a, () => openPec(), { size: 15, pulse: true }));
+    m.add(makeButton(this, GAME_W / 2, 296, 320, 38, PEC.button, 0x2e8b3a, () => showPecInfo(this), { size: 15, pulse: true }));
     m.add(this.add.text(GAME_W / 2, 326, PEC.howTo, { ...TXT, fontSize: '9px', color: '#bbbbbb', strokeThickness: 2 }).setOrigin(0.5));
     m.add(this.add.text(GAME_W / 2, 436, DISCLAIMER, { ...TXT, fontSize: '9px', color: '#999999', strokeThickness: 2 }).setOrigin(0.5));
     this.pauseMenu = m;
@@ -201,7 +202,7 @@ export default class UIScene extends Phaser.Scene {
     m.add(makeButton(this, GAME_W / 2 - 110, 212, 200, 40, 'TENTAR DE NOVO', 0x2f74c0, () => this.gs.restartGame(), { size: 15 }));
     m.add(makeButton(this, GAME_W / 2 + 110, 212, 200, 40, 'MAPA', 0x3a4a3a, () => this.gs.goToMap(), { size: 15 }));
     m.add(this.add.text(GAME_W / 2, 300, PEC.status, { ...TXT, fontSize: '12px', color: '#ffffff', strokeThickness: 3 }).setOrigin(0.5));
-    m.add(makeButton(this, GAME_W / 2, 336, 320, 36, PEC.button, 0x2e8b3a, () => openPec(), { size: 14, pulse: true }));
+    m.add(makeButton(this, GAME_W / 2, 336, 320, 36, PEC.button, 0x2e8b3a, () => showPecInfo(this), { size: 14, pulse: true }));
     this.lostPanel = m;
   }
 
@@ -269,7 +270,7 @@ export default class UIScene extends Phaser.Scene {
     block(PEC.status, { fontSize: '11px', color: '#ff9f1a' });
 
     // --- ações
-    add(makeButton(this, 250, 324, 360, 46, PEC.button, 0x2e8b3a, () => openPec(), { size: 17, pulse: true }));
+    add(makeButton(this, 250, 324, 360, 46, PEC.button, 0x2e8b3a, () => showPecInfo(this), { size: 17, pulse: true }));
     add(this.add.text(250, 354, PEC.howTo, { ...TXT, fontSize: '9px', color: '#bbbbbb', strokeThickness: 2 }).setOrigin(0.5));
     add(makeButton(this, 526, 324, 160, 38, 'COMPARTILHAR', 0x2f74c0, () => shareGame(this, r), { size: 13 }));
     const cont = add(makeButton(this, 694, 324, 150, 38, r.next ? 'PRÓXIMA ›' : 'CONCLUIR ›', 0x3a4a3a, () => this.gs.restartGame(), { size: 13 }));

@@ -19,6 +19,7 @@ export function hookPecReturn(game) {
   onResume(() => {
     if (!pending) return;
     pending = false;
+    if (game.scene.isActive('PecScene')) game.scene.stop('PecScene'); // fecha a explicação para mostrar o agradecimento
     game.events.emit('pec-return');
   });
 }
